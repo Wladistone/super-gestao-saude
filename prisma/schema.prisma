@@ -1,0 +1,557 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// -------------------------------------------------------------
+// ENUMS
+// -------------------------------------------------------------
+
+enum PerfilUsuario {
+  ADMINISTRADOR
+  GESTOR_CONTRATOS
+  FISCAL_CONTRATO
+  COORDENACAO_FROTAS
+  TI
+  ORCAMENTO_FINANCAS
+  JUDICIALIZACAO
+}
+
+enum StatusProcesso {
+  FASE_PREPARATORIA
+  JURIDICO
+  LICITACAO
+  CONTRATADO
+  ENCERRADO
+}
+
+enum StatusPCA {
+  PLANEJADO
+  EM_LICITACAO
+  CONTRATADO
+  CANCELADO
+}
+
+enum TipoCreditoAdicional {
+  SUPLEMENTAR
+  ESPECIAL
+  EXTRAORDINARIO
+}
+
+enum OrigemCredito {
+  ANULACAO
+  EXCESSO_ARRECADACAO
+  SUPERAVIT
+}
+
+enum TipoAditivo {
+  PRAZO
+  VALOR
+  SUPRESSAO
+  REAJUSTE
+}
+
+enum StatusOF {
+  EMITIDA
+  ENTREGUE
+  LIQUIDADA
+  CANCELADA
+}
+
+enum TipoFavorecido {
+  CONTRATADA
+  PRESTADOR_SUS
+  FOLHA
+}
+
+enum StatusVeiculo {
+  DISPONIVEL
+  EM_ROTA
+  MANUTENCAO
+  PLANTAO_24_7
+}
+
+enum TipoVeiculo {
+  PROPRIO
+  LOCADO
+  COOPERATIVA
+}
+
+enum EscalaMotorista {
+  PLANTAO
+  DIURNO
+  NOTURNO
+  FOLGA
+}
+
+enum TipoAtivoTI {
+  DESKTOP
+  NOTEBOOK
+  IMPRESSORA
+  SWITCH
+  SERVIDOR
+}
+
+enum StatusAtivoTI {
+  EM_USO
+  MANUTENCAO
+  RESERVA_TECNICA
+  DESCARTE
+}
+
+enum TipoDemandaJudicial {
+  MEDICAMENTO
+  PROCEDIMENTO_CIRURGIA
+  LEITO_UTI
+  INSUMO
+}
+
+enum StatusDemandaJudicial {
+  EM_ANALISE
+  CUMPRIDA
+  RECURSO
+  BLOQUEIO_JUDICIAL
+}
+
+// -------------------------------------------------------------
+// MODELOS DE AUTENTICAÇÃO E AUDITORIA
+// -------------------------------------------------------------
+
+model Usuario {
+  id        String        @id @default(uuid())
+  nome      String
+  email     String        @unique
+  cpf       String        @unique
+  cargo     String
+  setor     String
+  perfil    PerfilUsuario @default(GESTOR_CONTRATOS)
+  ativo     Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  processosCriados       ProcessoAdministrativo[] @relation("UsuarioCriadorProcesso")
+  contratosFiscalTitular Contrato[]               @relation("FiscalTitular")
+  contratosFiscalSubst   Contrato[]               @relation("FiscalSubstituto")
+}
+
+// -------------------------------------------------------------
+// 1. PROCESSO ADMINISTRATIVO & PCA
+// -------------------------------------------------------------
+
+model ItemPCA {
+  id                      String    @id @default(uuid())
+  anoExercicio            Int       @default(2025)
+  codigoItem              String    @unique
+  descricao               String
+  categoria               String
+  valorEstimado           Decimal   @db.Decimal(14, 2)
+  status                  StatusPCA @default(PLANEJADO)
+  dataPrevisaoContratacao DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  processos ProcessoAdministrativo[]
+}
+
+model ProcessoAdministrativo {
+  id             String         @id @default(uuid())
+  numeroProcesso String         @unique
+  numeroCapa     String
+  objeto         String
+  setorAtual     String
+  status         StatusProcesso @default(FASE_PREPARATORIA)
+  itemPcaId      String?
+  itemPca        ItemPCA?       @relation(fields: [itemPcaId], references: [id])
+  createdById    String?
+  criadoPor      Usuario?       @relation("UsuarioCriadorProcesso", fields: [createdById], references: [id])
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  atas                  AtaRegistroPrecos[]
+  contratos             Contrato[]
+  creditos              CreditoAdicional[]
+  reservasOrcamentarias ReservaOrcamentaria[]
+}
+
+// -------------------------------------------------------------
+// 2. ORÇAMENTO & CRÉDITOS ADICIONAIS
+// -------------------------------------------------------------
+
+model DotacaoOrcamentaria {
+  id                 String   @id @default(uuid())
+  programaDeTrabalho String
+  elementoDespesa    String
+  fonteRecurso       String
+  orcamentoInicial   Decimal  @db.Decimal(14, 2)
+  saldoDisponivel    Decimal  @db.Decimal(14, 2)
+  valorReservado     Decimal  @default(0) @db.Decimal(14, 2)
+  valorEmpenhado     Decimal  @default(0) @db.Decimal(14, 2)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  creditosDestino CreditoAdicional[]    @relation("CreditoDotacaoDestino")
+  reservas        ReservaOrcamentaria[]
+  pagamentos      PagamentoLiquidacao[]
+}
+
+model CreditoAdicional {
+  id               String                  @id @default(uuid())
+  tipo             TipoCreditoAdicional    @default(SUPLEMENTAR)
+  decretoNumero    String
+  valor            Decimal                 @db.Decimal(14, 2)
+  origem           OrigemCredito
+  dataAprovacao    DateTime
+  processoOrigemId String?
+  processoOrigem   ProcessoAdministrativo? @relation(fields: [processoOrigemId], references: [id])
+  dotacaoDestinoId String
+  dotacaoDestino   DotacaoOrcamentaria     @relation("CreditoDotacaoDestino", fields: [dotacaoDestinoId], references: [id])
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+}
+
+model ReservaOrcamentaria {
+  id             String                  @id @default(uuid())
+  dotacaoId      String
+  dotacao        DotacaoOrcamentaria     @relation(fields: [dotacaoId], references: [id])
+  processoId     String?
+  processo       ProcessoAdministrativo? @relation(fields: [processoId], references: [id])
+  contratoId     String?
+  contrato       Contrato?               @relation(fields: [contratoId], references: [id])
+  valorReservado Decimal                 @db.Decimal(14, 2)
+  justificativa  String
+  createdAt      DateTime                @default(now())
+}
+
+// -------------------------------------------------------------
+// 3. ATAS DE REGISTRO DE PREÇOS, CONTRATOS & FORNECEDORES
+// -------------------------------------------------------------
+
+model Fornecedor {
+  id           String   @id @default(uuid())
+  cnpj         String   @unique
+  razaoSocial  String
+  nomeFantasia String
+  contato      String
+  email        String
+  telefone     String
+  endereco     String
+  cidade       String
+  uf           String
+  ativo        Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  atas              AtaRegistroPrecos[]
+  contratos         Contrato[]
+  vinculosJudiciais VinculoExecucao[]
+}
+
+model AtaRegistroPrecos {
+  id                   String                 @id @default(uuid())
+  numeroAta            String                 @unique
+  processoOrigemId     String
+  processoOrigem       ProcessoAdministrativo @relation(fields: [processoOrigemId], references: [id])
+  fornecedorId         String
+  fornecedor           Fornecedor             @relation(fields: [fornecedorId], references: [id])
+  objeto               String
+  vigenciaInicio       DateTime
+  vigenciaFim          DateTime
+  valorTotalRegistrado Decimal                @db.Decimal(14, 2)
+  saldoTotalDisponivel Decimal                @db.Decimal(14, 2)
+  status               String                 @default("Ativa")
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+
+  contratosDerivados Contrato[]
+  itens              ItemContrato[]
+}
+
+model Contrato {
+  id                   String                 @id @default(uuid())
+  numeroContrato       String                 @unique
+  ataOrigemId          String?
+  ataOrigem            AtaRegistroPrecos?     @relation(fields: [ataOrigemId], references: [id])
+  processoOrigemId     String
+  processoOrigem       ProcessoAdministrativo @relation(fields: [processoOrigemId], references: [id])
+  fornecedorId         String
+  fornecedor           Fornecedor             @relation(fields: [fornecedorId], references: [id])
+  objeto               String
+  dataAssinatura       DateTime
+  vigenciaInicio       DateTime
+  vigenciaFim          DateTime
+  valorGlobal          Decimal                @db.Decimal(14, 2)
+  saldoFinanceiroAtual Decimal                @db.Decimal(14, 2)
+  fiscalTitularId      String?
+  fiscalTitular        Usuario?               @relation("FiscalTitular", fields: [fiscalTitularId], references: [id])
+  fiscalSubstitutoId   String?
+  fiscalSubstituto     Usuario?               @relation("FiscalSubstituto", fields: [fiscalSubstitutoId], references: [id])
+  status               String                 @default("Vigente")
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+
+  itens                 ItemContrato[]
+  termosAditivos        TermoAditivo[]
+  ordensFornecimento    OrdemFornecimentoServico[]
+  pagamentos            PagamentoLiquidacao[]
+  reservasOrcamentarias ReservaOrcamentaria[]
+  veiculosLocados       Veiculo[]
+  abastecimentos        Abastecimento[]
+  manutencoesVeiculos   ManutencaoVeiculo[]
+  licencasSoftware      LicencaSoftware[]
+  vinculosJudiciais     VinculoExecucao[]
+}
+
+model TermoAditivo {
+  id                String      @id @default(uuid())
+  contratoId        String
+  contrato          Contrato    @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+  numeroTermo       String
+  tipo              TipoAditivo
+  valorAcrescido    Decimal     @default(0) @db.Decimal(14, 2)
+  novaVigenciaFim   DateTime?
+  processoAditivoId String?
+  justificativa     String
+  dataAssinatura    DateTime
+  createdAt         DateTime    @default(now())
+}
+
+model ItemContrato {
+  id                   String             @id @default(uuid())
+  contratoId           String?
+  contrato             Contrato?          @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+  ataId                String?
+  ata                  AtaRegistroPrecos? @relation(fields: [ataId], references: [id], onDelete: Cascade)
+  codigoItem           String
+  descricao            String
+  unidadeMedida        String             @default("UN")
+  quantidadeContratada Decimal            @db.Decimal(14, 2)
+  quantidadeDisponivel Decimal            @db.Decimal(14, 2)
+  valorUnitario        Decimal            @db.Decimal(14, 2)
+  saldoItem            Decimal            @db.Decimal(14, 2)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  itensOrdem ItensOF[]
+}
+
+// -------------------------------------------------------------
+// 4. EXECUÇÃO CONTRATUAL (ORDENS DE FORNECIMENTO & PAGAMENTOS)
+// -------------------------------------------------------------
+
+model OrdemFornecimentoServico {
+  id           String    @id @default(uuid())
+  numeroOF     String    @unique
+  contratoId   String
+  contrato     Contrato  @relation(fields: [contratoId], references: [id])
+  dataEmissao  DateTime  @default(now())
+  prazoEntrega DateTime?
+  valorTotal   Decimal   @db.Decimal(14, 2)
+  status       StatusOF  @default(EMITIDA)
+  observacoes  String?
+  createdById  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  itens             ItensOF[]
+  pagamentos        PagamentoLiquidacao[]
+  vinculosJudiciais VinculoExecucao[]
+}
+
+model ItensOF {
+  id                   String                   @id @default(uuid())
+  ordemId              String
+  ordem                OrdemFornecimentoServico @relation(fields: [ordemId], references: [id], onDelete: Cascade)
+  itemContratoId       String
+  itemContrato         ItemContrato             @relation(fields: [itemContratoId], references: [id])
+  quantidadeSolicitada Decimal                  @db.Decimal(14, 2)
+  valorUnitario        Decimal                  @db.Decimal(14, 2)
+  valorTotal           Decimal                  @db.Decimal(14, 2)
+  createdAt            DateTime                 @default(now())
+}
+
+model PagamentoLiquidacao {
+  id               String                    @id @default(uuid())
+  ordemId          String?
+  ordem            OrdemFornecimentoServico? @relation(fields: [ordemId], references: [id])
+  contratoId       String?
+  contrato         Contrato?                 @relation(fields: [contratoId], references: [id])
+  numeroNotaFiscal String
+  numeroEmpenho    String
+  numeroLiquidacao String
+  valorPago        Decimal                   @db.Decimal(14, 2)
+  dataPagamento    DateTime
+  fonteRecursoId   String
+  dotacao          DotacaoOrcamentaria       @relation(fields: [fonteRecursoId], references: [id])
+  tipoFavorecido   TipoFavorecido            @default(CONTRATADA)
+  status           String                    @default("Liquidado")
+  observacoes      String?
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+}
+
+// -------------------------------------------------------------
+// 5. MÓDULO TRANSPORTES & FROTAS
+// -------------------------------------------------------------
+
+model Veiculo {
+  id                 String        @id @default(uuid())
+  placa              String        @unique
+  modelo             String
+  marca              String
+  ano                Int
+  chassi             String        @unique
+  status             StatusVeiculo @default(DISPONIVEL)
+  tipo               TipoVeiculo   @default(PROPRIO)
+  capacidade         String
+  quilometragemAtual Int           @default(0)
+  dataLicenciamento  DateTime?
+  contratoLocacaoId  String?
+  contratoLocacao    Contrato?     @relation(fields: [contratoLocacaoId], references: [id])
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  abastecimentos Abastecimento[]
+  manutencoes    ManutencaoVeiculo[]
+  escalas        EscalaPlantao24x7[]
+}
+
+model Motorista {
+  id             String          @id @default(uuid())
+  nome           String
+  matricula      String          @unique
+  cnh            String          @unique
+  categoriaCnh   String
+  validadeCnh    DateTime
+  escalaTrabalho EscalaMotorista @default(DIURNO)
+  status         String          @default("Ativo")
+  telefone       String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  abastecimentos Abastecimento[]
+  escalas        EscalaPlantao24x7[]
+}
+
+model Abastecimento {
+  id                    String    @id @default(uuid())
+  veiculoId             String
+  veiculo               Veiculo   @relation(fields: [veiculoId], references: [id])
+  motoristaId           String
+  motorista             Motorista @relation(fields: [motoristaId], references: [id])
+  contratoCombustivelId String
+  contratoCombustivel   Contrato  @relation(fields: [contratoCombustivelId], references: [id])
+  dataHora              DateTime  @default(now())
+  quilometragem         Int
+  litros                Decimal   @db.Decimal(10, 2)
+  tipoCombustivel       String
+  valorTotal            Decimal   @db.Decimal(14, 2)
+  cupomFiscal           String
+  postoConveniado       String
+  createdAt             DateTime  @default(now())
+}
+
+model ManutencaoVeiculo {
+  id                   String    @id @default(uuid())
+  veiculoId            String
+  veiculo              Veiculo   @relation(fields: [veiculoId], references: [id])
+  contratoManutencaoId String
+  contratoManutencao   Contrato  @relation(fields: [contratoManutencaoId], references: [id])
+  osNumero             String    @unique
+  dataEntrada          DateTime
+  dataSaida            DateTime?
+  servicosRealizados   String
+  valor                Decimal   @db.Decimal(14, 2)
+  status               String    @default("Concluída")
+  createdAt            DateTime  @default(now())
+}
+
+model EscalaPlantao24x7 {
+  id                String    @id @default(uuid())
+  veiculoId         String
+  veiculo           Veiculo   @relation(fields: [veiculoId], references: [id])
+  motoristaId       String
+  motorista         Motorista @relation(fields: [motoristaId], references: [id])
+  turno             String
+  dataInicio        DateTime
+  dataFim           DateTime
+  contatoEmergencia String
+  statusProntidao   String    @default("Pronto")
+  createdAt         DateTime  @default(now())
+}
+
+// -------------------------------------------------------------
+// 6. MÓDULO TI & PATRIMÔNIO
+// -------------------------------------------------------------
+
+model AtivoTI {
+  id                 String        @id @default(uuid())
+  patrimonio         String        @unique
+  tipo               TipoAtivoTI
+  marca              String
+  modelo             String
+  setorAlocado       String
+  responsavel        String
+  status             StatusAtivoTI @default(EM_USO)
+  dataAquisicao      DateTime
+  contratoGarantiaId String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+}
+
+model LicencaSoftware {
+  id              String    @id @default(uuid())
+  software        String
+  fabricante      String
+  quantidade      Int
+  quantidadeEmUso Int       @default(0)
+  vigenciaFim     DateTime
+  chaveLicenca    String?
+  contratoId      String?
+  contrato        Contrato? @relation(fields: [contratoId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// -------------------------------------------------------------
+// 7. MÓDULO JUDICIALIZAÇÃO DA SAÚDE
+// -------------------------------------------------------------
+
+model DemandaJudicial {
+  id                     String                @id @default(uuid())
+  numeroProcessoJudicial String                @unique
+  varaJuizo              String
+  poloAtivo              String
+  tipoDemanda            TipoDemandaJudicial
+  dataIntimacao          DateTime
+  prazoCumprimento       DateTime
+  status                 StatusDemandaJudicial @default(EM_ANALISE)
+  prioridade             String                @default("Urgente")
+  valorEstimado          Decimal               @db.Decimal(14, 2)
+  relatoCaso             String
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+
+  vinculosExecucao VinculoExecucao[]
+}
+
+model VinculoExecucao {
+  id                     String                    @id @default(uuid())
+  demandaId              String
+  demanda                DemandaJudicial           @relation(fields: [demandaId], references: [id], onDelete: Cascade)
+  contratoId             String?
+  contrato               Contrato?                 @relation(fields: [contratoId], references: [id])
+  fornecedorId           String?
+  fornecedor             Fornecedor?               @relation(fields: [fornecedorId], references: [id])
+  ordemFornecimentoId    String?
+  ordemFornecimento      OrdemFornecimentoServico? @relation(fields: [ordemFornecimentoId], references: [id])
+  dataVinculacao         DateTime                  @default(now())
+  valorEmpenhadoJudicial Decimal                   @db.Decimal(14, 2)
+  statusCumprimento      String                    @default("Em Atendimento")
+  observacoes            String?
+  createdAt              DateTime                  @default(now())
+  updatedAt              DateTime                  @updatedAt
+}
