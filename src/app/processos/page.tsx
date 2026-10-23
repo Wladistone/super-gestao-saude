@@ -269,26 +269,20 @@ export default function ProcessosPage() {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-sky-800 bg-sky-100 border border-sky-200 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
-              <Scale className="h-3 w-3" />
-              Lei Federal nº 14.133/2021 & MROSC
-            </span>
-            <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-full">
-              Instrução por Demanda & Enquadramento SG
-            </span>
-          </div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight mt-1">
-            Hub de Processos Licitatórios & PCA
+          <span className="text-[11px] font-semibold text-sky-800 tracking-wide uppercase">
+            Instrução Processual • SMS
+          </span>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight mt-0.5">
+            Processos & Licitações
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Instrução processual completa, fluxo de atos administrativos, catálogo de minutas oficiais (.docx) e integração reativa ao PCA.
+          <p className="text-xs text-slate-600 mt-0.5">
+            Instrução de autos, fluxo de atos administrativos, catálogo de minutas oficiais e integração ao PCA.
           </p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-slate-200 gap-3 text-xs font-semibold overflow-x-auto">
+      <div className="flex border-b border-slate-200 gap-2 text-xs font-medium overflow-x-auto">
         <button
           onClick={() => setActiveTab("demandas")}
           className={`pb-2.5 px-3 border-b-2 transition-all flex items-center gap-2 shrink-0 ${
@@ -298,9 +292,9 @@ export default function ProcessosPage() {
           }`}
         >
           <Building2 className="h-4 w-4 text-sky-600" />
-          <span>Tramitação de Demandas (SAS, SUVIG, SGTES, SURCAA ➔ SG)</span>
+          <span>Tramitação de Demandas</span>
           {demandasAguardandoSG > 0 && (
-            <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-amber-500 text-white animate-pulse">
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
               {demandasAguardandoSG} pendente(s)
             </span>
           )}
@@ -327,10 +321,7 @@ export default function ProcessosPage() {
           }`}
         >
           <FolderTree className="h-4 w-4 text-sky-600" />
-          <span>Ofícios, Pareceres & Memorandos ({MODELOS_OFICIOS_MEMOS.length})</span>
-          <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-sky-100 text-sky-800 uppercase">
-            Comunicações SMS
-          </span>
+          <span>Minutas & Modelos Oficiais ({MODELOS_OFICIOS_MEMOS.length})</span>
         </button>
 
         <button
@@ -341,8 +332,8 @@ export default function ProcessosPage() {
               : "border-transparent text-slate-500 hover:text-slate-800"
           }`}
         >
-          <Sparkles className="h-4 w-4 text-purple-600" />
-          <span>PCA 2025 - Plano de Contratações Anual ({itensPCA.length})</span>
+          <Sparkles className="h-4 w-4 text-indigo-600" />
+          <span>Plano de Contratações (PCA 2025)</span>
         </button>
       </div>
 

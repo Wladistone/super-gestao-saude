@@ -25,7 +25,11 @@ import {
   MODULOS_SISTEMA_DISPONIVEIS,
 } from "@/lib/types";
 import { dataStore } from "@/lib/data-store";
-import { autorizarCadastroAction, rejeitarCadastroAction } from "@/actions/super-gestao-actions";
+import {
+  autorizarCadastroAction,
+  rejeitarCadastroAction,
+  reenviarEmailBoasVindasAction,
+} from "@/actions/super-gestao-actions";
 import { formatDate } from "@/lib/utils";
 
 interface PermissaoEstado {
@@ -54,6 +58,7 @@ export function AutorizarCadastroModal({
   const [motivoRejeicao, setMotivoRejeicao] = useState("");
   const [modoRejeicao, setModoRejeicao] = useState(false);
   const [salvando, setSalvando] = useState(false);
+  const [reenviandoEmail, setReenviandoEmail] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Inicializa permissões com base no histórico do cadastro ou padrão inteligente
@@ -72,11 +77,12 @@ export function AutorizarCadastroModal({
       });
     } else {
       // Padrão inicial por lotação
+      // Padrão inicial por lotação: o módulo de CADASTRO é estritamente privativo da Coordenadora Geral
       MODULOS_SISTEMA_DISPONIVEIS.forEach((mod) => {
         if (mod.id === "cadastro") {
           inicialMap[mod.id] = {
-            visualizar: solicitacao.superintendenciaLotacao === "SG",
-            editar: solicitacao.superintendenciaLotacao === "SG",
+            visualizar: false,
+            editar: false,
           };
         } else if (mod.id === "tramitacao") {
           // Por padrão em tramitação, libera tanto visualização quanto edição
@@ -85,10 +91,11 @@ export function AutorizarCadastroModal({
           inicialMap[mod.id] = { visualizar: true, editar: true };
         } else if (mod.id === "visao_geral") {
           inicialMap[mod.id] = { visualizar: true, editar: false };
-        } else if (mod.id === "processos" || mod.id === "contratos" || mod.id === "frotas") {
+        } else if (mod.id === "processos" || mod.id === "contratos") {
           const isSG = solicitacao.superintendenciaLotacao === "SG";
           inicialMap[mod.id] = { visualizar: true, editar: isSG };
         } else {
+          // Frotas, Orçamento, Judicialização, TI: desmarcados por padrão
           inicialMap[mod.id] = { visualizar: false, editar: false };
         }
       });
@@ -103,8 +110,9 @@ export function AutorizarCadastroModal({
 
   if (!isOpen || !solicitacao) return null;
 
-  // Alternadores independentes de permissão
+  // Alternadores independentes de permissão (CADASTRO é estritamente bloqueado)
   const handleToggleVisualizar = (moduloId: string) => {
+    if (moduloId === "cadastro") return;
     setPermissoesMap((prev) => {
       const atual = prev[moduloId] || { visualizar: false, editar: false };
       return {
@@ -118,6 +126,7 @@ export function AutorizarCadastroModal({
   };
 
   const handleToggleEditar = (moduloId: string) => {
+    if (moduloId === "cadastro") return;
     setPermissoesMap((prev) => {
       const atual = prev[moduloId] || { visualizar: false, editar: false };
       return {
@@ -132,6 +141,7 @@ export function AutorizarCadastroModal({
 
   // Botão rápido para marcar/desmarcar ambos
   const handleToggleAmbos = (moduloId: string) => {
+    if (moduloId === "cadastro") return;
     setPermissoesMap((prev) => {
       const atual = prev[moduloId] || { visualizar: false, editar: false };
       const ambosAtivos = atual.visualizar && atual.editar;
@@ -152,8 +162,11 @@ export function AutorizarCadastroModal({
     MODULOS_SISTEMA_DISPONIVEIS.forEach((mod) => {
       switch (tipo) {
         case "AMBOS_TODOS":
-          // Libera tanto visualização quanto edição em todos os módulos
-          novoMap[mod.id] = { visualizar: true, editar: true };
+          // Libera visualização e edição nos módulos operacionais (CADASTRO é sempre false)
+          novoMap[mod.id] = {
+            visualizar: mod.id !== "cadastro",
+            editar: mod.id !== "cadastro",
+          };
           break;
 
         case "CONSULTA_TODOS":
@@ -204,7 +217,7 @@ export function AutorizarCadastroModal({
   const qtdSemAcesso = valores.filter((p) => !p.visualizar && !p.editar).length;
 
   // Submeter Autorização com Visualização e Edição
-  const handleConfirmarAutorizacao = () => {
+  const handleConfirmarAutorizacao = async () => {
     setSalvando(true);
     try {
       const listaPermissoes: PermissaoModulo[] = MODULOS_SISTEMA_DISPONIVEIS.map((mod) => {
@@ -223,6 +236,20 @@ export function AutorizarCadastroModal({
         };
       });
 
+      // Executa no servidor com disparo automático de e-mail institucional
+      const resAction = await autorizarCadastroAction({
+        id: solicitacao.id,
+        permissoes: listaPermissoes,
+        autorizadorNome: autorizadorPadrao,
+        observacoesSG: observacoesSG.trim() || undefined,
+        email: solicitacao.email,
+        nomeCompleto: solicitacao.nomeCompleto,
+        matricula: solicitacao.matricula,
+        superintendenciaLotacao: solicitacao.superintendenciaLotacao,
+        cargo: solicitacao.cargo,
+      });
+
+      // Sincroniza localmente
       const ok = dataStore.autorizarCadastro(
         solicitacao.id,
         listaPermissoes,
@@ -230,23 +257,24 @@ export function AutorizarCadastroModal({
         observacoesSG.trim() || undefined
       );
 
-      // Sincroniza também no servidor
-      autorizarCadastroAction({
-        id: solicitacao.id,
-        permissoes: listaPermissoes,
-        autorizadorNome: autorizadorPadrao,
-        observacoesSG: observacoesSG.trim() || undefined,
-      }).catch(console.warn);
-
-      if (ok) {
+      if (resAction?.emailDisparado?.success) {
         setFeedback({
           type: "success",
-          text: `Cadastro de ${solicitacao.nomeCompleto} autorizado pela SG com permissões de visualização e edição atribuídas!`,
+          text: `Cadastro de ${solicitacao.nomeCompleto} autorizado pela SG! E-mail oficial enviado via SMTP para ${solicitacao.email}. ID: ${resAction.emailDisparado.messageId}`,
         });
         setTimeout(() => {
           if (onSuccess) onSuccess();
           onClose();
-        }, 1200);
+        }, 1800);
+      } else if (ok || resAction?.success) {
+        setFeedback({
+          type: "success",
+          text: `Cadastro de ${solicitacao.nomeCompleto} autorizado pela SG! ${resAction?.emailDisparado?.aviso || "Disparo registrado no sistema."}`,
+        });
+        setTimeout(() => {
+          if (onSuccess) onSuccess();
+          onClose();
+        }, 1800);
       } else {
         setFeedback({ type: "error", text: "Erro ao registrar autorização." });
       }
@@ -254,6 +282,60 @@ export function AutorizarCadastroModal({
       setFeedback({ type: "error", text: "Falha técnica ao processar autorização." });
     } finally {
       setSalvando(false);
+    }
+  };
+
+  // Reenviar E-mail Oficial Diretamente
+  const handleReenviarEmailDireto = async () => {
+    if (!solicitacao) return;
+    setReenviandoEmail(true);
+    setFeedback(null);
+    try {
+      const res = await reenviarEmailBoasVindasAction({
+        id: solicitacao.id,
+        email: solicitacao.email,
+        nomeCompleto: solicitacao.nomeCompleto,
+        matricula: solicitacao.matricula,
+        superintendencia: solicitacao.superintendenciaLotacao,
+        cargo: solicitacao.cargo,
+        autorizadorNome: autorizadorPadrao,
+        observacoesSG: observacoesSG.trim() || solicitacao.observacoesSG,
+        permissoes: solicitacao.permissoes,
+      });
+
+      if (res.success) {
+        // Sincroniza localmente
+        const cadLocal = dataStore.solicitacoesCadastro.find((c) => c.id === solicitacao.id);
+        if (cadLocal) {
+          cadLocal.notificacaoEmail = {
+            enviado: true,
+            dataHora: res.timestamp,
+            destinatario: solicitacao.email,
+            assunto: res.assunto,
+            modo: res.modo,
+            mensagemId: res.messageId,
+          };
+          dataStore.salvarSolicitacoesStorage();
+        }
+
+        setFeedback({
+          type: "success",
+          text: `E-mail oficial reenviado com sucesso para ${solicitacao.email}! ID: ${res.messageId} (Modo: ${res.modo.toUpperCase()}).`,
+        });
+        if (onSuccess) onSuccess();
+      } else {
+        setFeedback({
+          type: "error",
+          text: `Falha ao reenviar e-mail: ${res.aviso || "Erro no servidor SMTP."}`,
+        });
+      }
+    } catch (err: any) {
+      setFeedback({
+        type: "error",
+        text: `Erro ao disparar e-mail: ${err?.message || err}`,
+      });
+    } finally {
+      setReenviandoEmail(false);
     }
   };
 
@@ -268,16 +350,21 @@ export function AutorizarCadastroModal({
     try {
       const ok = dataStore.rejeitarCadastro(solicitacao.id, motivoRejeicao.trim(), autorizadorPadrao);
 
-      // Sincroniza também no servidor
+      // Sincroniza também no servidor e dispara e-mail de aviso
       rejeitarCadastroAction({
         id: solicitacao.id,
         motivoRejeicao: motivoRejeicao.trim(),
         autorizadorNome: autorizadorPadrao,
+        email: solicitacao.email,
+        nomeCompleto: solicitacao.nomeCompleto,
+        matricula: solicitacao.matricula,
+        superintendenciaLotacao: solicitacao.superintendenciaLotacao,
+        cargo: solicitacao.cargo,
       }).catch(console.warn);
       if (ok) {
         setFeedback({
           type: "success",
-          text: `Solicitação de ${solicitacao.nomeCompleto} rejeitada.`,
+          text: `Solicitação de ${solicitacao.nomeCompleto} não aprovada. E-mail com orientações enviado para ${solicitacao.email}.`,
         });
         setTimeout(() => {
           if (onSuccess) onSuccess();
@@ -530,63 +617,70 @@ export function AutorizarCadastroModal({
 
                       {/* Controles de Autorização: Visualização & Edição simultâneas */}
                       <div className="flex flex-wrap items-center gap-2 shrink-0">
-                        
-                        {/* 1. Botão/Checkbox de Visualização */}
-                        <button
-                          type="button"
-                          onClick={() => handleToggleVisualizar(modulo.id)}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer select-none ${
-                            estado.visualizar
-                              ? "bg-amber-500 border-amber-600 text-white shadow-xs"
-                              : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300"
-                          }`}
-                          title="Permitir que o servidor visualize e consulte este módulo"
-                        >
-                          <Eye className={`h-4 w-4 ${estado.visualizar ? "text-white" : "text-amber-500"}`} />
-                          <span>Visualização</span>
-                          {estado.visualizar ? (
-                            <Check className="h-3 w-3 stroke-[3]" />
-                          ) : (
-                            <span className="text-[10px] text-slate-400 font-normal">Off</span>
-                          )}
-                        </button>
+                        {modulo.id === "cadastro" ? (
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-500 text-xs font-semibold select-none">
+                            <Ban className="h-3.5 w-3.5 text-slate-400" />
+                            <span>Privativo da Coordenadora Geral</span>
+                          </div>
+                        ) : (
+                          <>
+                            {/* 1. Botão/Checkbox de Visualização */}
+                            <button
+                              type="button"
+                              onClick={() => handleToggleVisualizar(modulo.id)}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer select-none ${
+                                estado.visualizar
+                                  ? "bg-amber-500 border-amber-600 text-white shadow-xs"
+                                  : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300"
+                              }`}
+                              title="Permitir que o servidor visualize e consulte este módulo"
+                            >
+                              <Eye className={`h-4 w-4 ${estado.visualizar ? "text-white" : "text-amber-500"}`} />
+                              <span>Visualização</span>
+                              {estado.visualizar ? (
+                                <Check className="h-3 w-3 stroke-[3]" />
+                              ) : (
+                                <span className="text-[10px] text-slate-400 font-normal">Off</span>
+                              )}
+                            </button>
 
-                        {/* 2. Botão/Checkbox de Edição */}
-                        <button
-                          type="button"
-                          onClick={() => handleToggleEditar(modulo.id)}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer select-none ${
-                            estado.editar
-                              ? "bg-emerald-600 border-emerald-700 text-white shadow-xs"
-                              : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300"
-                          }`}
-                          title="Permitir que o servidor crie, altere, edite e despache neste módulo"
-                        >
-                          <Edit3 className={`h-4 w-4 ${estado.editar ? "text-white" : "text-emerald-600"}`} />
-                          <span>Edição</span>
-                          {estado.editar ? (
-                            <Check className="h-3 w-3 stroke-[3]" />
-                          ) : (
-                            <span className="text-[10px] text-slate-400 font-normal">Off</span>
-                          )}
-                        </button>
+                            {/* 2. Botão/Checkbox de Edição */}
+                            <button
+                              type="button"
+                              onClick={() => handleToggleEditar(modulo.id)}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer select-none ${
+                                estado.editar
+                                  ? "bg-emerald-600 border-emerald-700 text-white shadow-xs"
+                                  : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300"
+                              }`}
+                              title="Permitir que o servidor crie, altere, edite e despache neste módulo"
+                            >
+                              <Edit3 className={`h-4 w-4 ${estado.editar ? "text-white" : "text-emerald-600"}`} />
+                              <span>Edição</span>
+                              {estado.editar ? (
+                                <Check className="h-3 w-3 stroke-[3]" />
+                              ) : (
+                                <span className="text-[10px] text-slate-400 font-normal">Off</span>
+                              )}
+                            </button>
 
-                        {/* 3. Atalho rápido Ambos / Status do Módulo */}
-                        <button
-                          type="button"
-                          onClick={() => handleToggleAmbos(modulo.id)}
-                          className={`px-2.5 py-1.5 rounded-xl border text-[10px] font-black uppercase transition-all cursor-pointer ${
-                            temAmbos
-                              ? "bg-indigo-100 text-indigo-950 border-indigo-300 hover:bg-indigo-200"
-                              : temNenhum
-                              ? "bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200"
-                              : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                          }`}
-                          title="Clique para alternar permissão completa (Visualização + Edição)"
-                        >
-                          {temAmbos ? "Ambos Ativos ✓" : temNenhum ? "Sem Acesso" : "Marcar Ambos"}
-                        </button>
-
+                            {/* 3. Atalho rápido Ambos / Status do Módulo */}
+                            <button
+                              type="button"
+                              onClick={() => handleToggleAmbos(modulo.id)}
+                              className={`px-2.5 py-1.5 rounded-xl border text-[10px] font-black uppercase transition-all cursor-pointer ${
+                                temAmbos
+                                  ? "bg-indigo-100 text-indigo-950 border-indigo-300 hover:bg-indigo-200"
+                                  : temNenhum
+                                  ? "bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200"
+                                  : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                              }`}
+                              title="Clique para alternar permissão completa (Visualização + Edição)"
+                            >
+                              {temAmbos ? "Ambos Ativos ✓" : temNenhum ? "Sem Acesso" : "Marcar Ambos"}
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   );
@@ -642,7 +736,29 @@ export function AutorizarCadastroModal({
             )}
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+            {solicitacao?.status === "AUTORIZADO" && !modoRejeicao && (
+              <button
+                type="button"
+                onClick={handleReenviarEmailDireto}
+                disabled={reenviandoEmail || salvando}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shadow-2xs"
+                title={`Reenviar e-mail de boas-vindas e dados de acesso para ${solicitacao.email}`}
+              >
+                {reenviandoEmail ? (
+                  <>
+                    <div className="h-3.5 w-3.5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                    <span>Disparando E-mail...</span>
+                  </>
+                ) : (
+                  <>
+                    <Mail className="h-3.5 w-3.5 text-indigo-600" />
+                    <span>Reenviar E-mail ao Servidor</span>
+                  </>
+                )}
+              </button>
+            )}
+
             <button
               type="button"
               onClick={onClose}
@@ -669,7 +785,7 @@ export function AutorizarCadastroModal({
                 className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-bold transition-all shadow-xs disabled:opacity-50 cursor-pointer"
               >
                 <CheckCircle2 className="h-4 w-4" />
-                <span>Salvar & Autorizar Acesso</span>
+                <span>{solicitacao?.status === "AUTORIZADO" ? "Salvar Alterações de Acesso" : "Salvar & Autorizar Acesso"}</span>
               </button>
             )}
           </div>

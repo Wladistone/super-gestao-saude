@@ -190,21 +190,21 @@ export default function SolicitacoesPage() {
         };
       case "DILIGENCIA_SOLICITADA":
         return {
-          label: "Diligência / Adequação",
-          className: "bg-rose-50 text-rose-700 border-rose-200 border animate-pulse",
-          icon: AlertTriangle,
+          label: "Ajuste Solicitado",
+          className: "bg-amber-50 text-amber-800 border-amber-200 border",
+          icon: Clock,
         };
       case "ENQUADRADA_E_AUTORIZADA":
         return {
-          label: "Autorizada / Licitando",
-          className: "bg-emerald-50 text-emerald-700 border-emerald-200 border",
+          label: "Autorizada para Licitação",
+          className: "bg-emerald-50 text-emerald-800 border-emerald-200 border",
           icon: CheckCircle,
         };
       case "INDEFERIDA_SG":
         return {
-          label: "Indeferida",
+          label: "Não Aprovada",
           className: "bg-slate-100 text-slate-700 border-slate-300 border",
-          icon: AlertTriangle,
+          icon: Clock,
         };
       default:
         return {
@@ -278,17 +278,17 @@ export default function SolicitacoesPage() {
           </div>
         </div>
 
-        {/* Diligências */}
-        <div className="p-4 rounded-xl bg-white border border-rose-200/80 shadow-2xs flex flex-col justify-between">
-          <div className="flex items-center justify-between text-rose-700">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Diligências Abertas</span>
-            <div className="p-1.5 rounded-lg bg-rose-50 text-rose-600 border border-rose-200">
-              <AlertTriangle className="h-4 w-4" />
+        {/* Ajustes / Diligências */}
+        <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-600">
+            <span className="text-[11px] font-semibold uppercase tracking-wider">Ajustes Solicitados</span>
+            <div className="p-1.5 rounded-lg bg-amber-50 text-amber-700 border border-amber-100">
+              <Clock className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black text-rose-700">{diligencias}</span>
-            <span className="text-[10px] text-rose-600 font-medium">Requer Ajustes</span>
+            <span className="text-2xl font-black text-slate-800">{diligencias}</span>
+            <span className="text-[10px] text-slate-400 font-medium">Revisão Pendente</span>
           </div>
         </div>
 

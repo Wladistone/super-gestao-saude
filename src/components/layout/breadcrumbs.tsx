@@ -16,7 +16,7 @@ export function Breadcrumbs() {
     contratos: "Atas & Contratos Reativos",
     frotas: "Frotas, TFD & Combustíveis",
     orcamento: "Orçamento & Créditos Adicionais",
-    judicializacao: "Judicialização da Saúde",
+    judicializacao: "Núcleo de Judicialização",
     ti: "Parque Tecnológico de TI",
   };
 

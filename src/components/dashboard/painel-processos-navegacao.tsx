@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import Link from "next/link";
 import { dataStore } from "@/lib/data-store";
 import {
   ProcessoAdministrativo,
@@ -9,7 +10,7 @@ import {
   DocumentoElaborado,
   StatusProcesso,
 } from "@/lib/types";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, extrairPrimeiroNome } from "@/lib/utils";
 import {
   Layers,
   Gavel,
@@ -20,6 +21,7 @@ import {
   ArrowRightCircle,
   Briefcase,
   UserCheck,
+  Inbox,
   Megaphone,
   Handshake,
   Sparkles,
@@ -537,6 +539,8 @@ export function PainelProcessosNavegacao() {
   // Busca interna
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("TODOS");
+  const [abaModalidades, setAbaModalidades] = useState<"comuns" | "contratos" | "especiais" | "todas">("comuns");
+  const [buscaModalidade, setBuscaModalidade] = useState("");
 
   const [usuarioLogado, setUsuarioLogado] = useState<{
     nome?: string;
@@ -1572,14 +1576,11 @@ export function PainelProcessosNavegacao() {
                         )}
                       </div>
 
-                      {/* CAMPO DE STATUS PROMINENTE CONFORME SOLICITADO */}
-                      <div className="mt-2.5 p-2.5 rounded-lg bg-amber-50/90 border border-amber-200/90 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-2xs">
-                        <div className="flex items-start sm:items-center gap-2 text-amber-950 font-medium">
-                          <Clock className="h-4 w-4 text-amber-700 shrink-0 mt-0.5 sm:mt-0" />
-                          <span className="leading-snug">
-                            <strong className="font-black text-amber-900 tracking-wide">STATUS:</strong>{" "}
-                            {obterTextoStatus(proc)}
-                          </span>
+                      {/* STATUS OFICIAL DISCRETO E AMIGÁVEL */}
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200/80 text-xs text-slate-700">
+                          <Clock className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                          <span>{obterTextoStatus(proc)}</span>
                         </div>
                         <button
                           type="button"
@@ -1587,36 +1588,26 @@ export function PainelProcessosNavegacao() {
                             e.stopPropagation();
                             setProcessoParaAtualizarStatus(proc);
                           }}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-[10px] transition-all shrink-0 self-start sm:self-center shadow-2xs"
-                          title="Informar ou atualizar o status e setor deste processo"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md hover:bg-slate-200 text-slate-600 text-[11px] font-medium transition-colors"
+                          title="Atualizar setor ou localização do processo"
                         >
-                          <FileEdit className="h-3 w-3 text-amber-700" />
-                          <span>Informar Status</span>
+                          <FileEdit className="h-3 w-3 text-slate-500" />
+                          <span>Atualizar setor</span>
                         </button>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between md:justify-end gap-4 shrink-0">
+                    <div className="flex items-center justify-between md:justify-end gap-3 shrink-0">
                       <div className="text-right">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                        <span className="text-[10px] text-slate-400 font-medium block">
                           Valor Estimado
                         </span>
-                        <span className="font-mono font-bold text-xs text-slate-900 block">
+                        <span className="font-mono font-semibold text-xs text-slate-800 block">
                           {proc.valorEstimado ? formatCurrency(proc.valorEstimado) : "-"}
                         </span>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedProcesso(proc);
-                        }}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-sky-50 hover:bg-sky-700 text-sky-850 hover:text-white border border-sky-200 transition-all text-xs font-bold shadow-2xs"
-                      >
-                        <span>Ver Informações</span>
-                        <ChevronRight className="h-3.5 w-3.5" />
-                      </button>
+                      <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-sky-600 group-hover:translate-x-0.5 transition-all" />
                     </div>
                   </div>
                 );
@@ -1648,75 +1639,239 @@ export function PainelProcessosNavegacao() {
     );
   }
 
+  // Categorização amigável das modalidades para evitar sobrecarga de informação
+  const categoriasFiltradas = useMemo(() => {
+    let lista = CATEGORIAS_CONFIG;
+
+    if (abaModalidades === "comuns") {
+      lista = lista.filter((c) =>
+        ["registro-de-precos", "pregao-sem-srp", "dispensa", "inexigibilidade", "adesao-de-ata", "contratacao-direta"].includes(c.id)
+      );
+    } else if (abaModalidades === "contratos") {
+      lista = lista.filter((c) => ["contratos", "atas", "diarias"].includes(c.id));
+    } else if (abaModalidades === "especiais") {
+      lista = lista.filter((c) =>
+        ["credenciamento", "termo-de-colaboracao", "termo-de-fomento", "chamamento-publico", "emergencial"].includes(c.id)
+      );
+    }
+
+    if (buscaModalidade.trim()) {
+      const q = buscaModalidade.toLowerCase();
+      lista = lista.filter(
+        (c) =>
+          c.nome.toLowerCase().includes(q) ||
+          c.sigla.toLowerCase().includes(q) ||
+          c.descricao.toLowerCase().includes(q)
+      );
+    }
+
+    return lista;
+  }, [abaModalidades, buscaModalidade]);
+
   // =========================================================================
-  // NÍVEL 1: VISÃO PRINCIPAL LIMPA E DESPOLUÍDA (AS 14 MODALIDADES)
+  // NÍVEL 1: VISÃO PRINCIPAL ACONCHEGANTE E ORGANIZADA
   // =========================================================================
+  const primeiroNome = extrairPrimeiroNome(usuarioLogado?.nome);
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Header Institucional Limpo e Objetivo */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-3 border-b border-slate-200">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-sky-850 bg-sky-100 border border-sky-200 px-2 py-0.5 rounded">
-              Superintendência de Gestão da Saúde
+    <div className="space-y-8 animate-in fade-in duration-200">
+      {/* 1. Boas-vindas Aconchegante e Humanizada */}
+      <div className="bg-gradient-to-r from-sky-50 via-slate-50 to-indigo-50/40 rounded-3xl border border-sky-100/80 p-6 sm:p-8 shadow-2xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <span className="text-[11px] font-semibold text-sky-800 tracking-wider uppercase">
+              Secretaria Municipal de Saúde • Arapiraca
             </span>
-            <span className="text-[10px] font-medium text-slate-500">
-              Município de Arapiraca &bull; Lei Federal nº 14.133/2021
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              Olá, {primeiroNome} 👋
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
+              Bem-vindo ao SuperGestão. Aqui você acompanha demandas, processos e contratações com calma, agilidade e segurança técnica.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
+            <span className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-medium shadow-2xs">
+              Lotação: <strong>{usuarioLogado?.setor || "Gabinete da Saúde"}</strong>
             </span>
           </div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900 mt-1">
-            Gestão de Processos & Contratações
-          </h1>
-          <p className="text-xs text-slate-600 mt-0.5">
-            Selecione o tipo de processo desejado para consultar os autos, tramitações e documentos oficiais:
-          </p>
+        </div>
+
+        {/* 3 Portais de Acesso Rápido e Descomplicado */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 mt-6 pt-6 border-t border-slate-200/60">
+          <Link
+            href="/tramitacao"
+            className="p-4 rounded-2xl bg-white hover:bg-sky-50/50 border border-slate-200 hover:border-sky-300 transition-all shadow-2xs group flex items-start gap-3.5"
+          >
+            <div className="p-2.5 rounded-xl bg-sky-100/70 text-sky-700 group-hover:scale-105 transition-transform shrink-0">
+              <Inbox className="h-5 w-5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-xs font-bold text-slate-900 group-hover:text-sky-800 transition-colors">
+                Tramitação & Demandas
+              </h3>
+              <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
+                Envio, despacho e pareceres entre setores
+              </p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-sky-600 group-hover:translate-x-0.5 transition-all shrink-0 mt-1" />
+          </Link>
+
+          <Link
+            href="/processos"
+            className="p-4 rounded-2xl bg-white hover:bg-sky-50/50 border border-slate-200 hover:border-sky-300 transition-all shadow-2xs group flex items-start gap-3.5"
+          >
+            <div className="p-2.5 rounded-xl bg-indigo-100/70 text-indigo-700 group-hover:scale-105 transition-transform shrink-0">
+              <FileText className="h-5 w-5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-xs font-bold text-slate-900 group-hover:text-indigo-800 transition-colors">
+                Processos & Licitações
+              </h3>
+              <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
+                Autos autuados, minutas Word e PCA 2025
+              </p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all shrink-0 mt-1" />
+          </Link>
+
+          <Link
+            href="/contratos"
+            className="p-4 rounded-2xl bg-white hover:bg-sky-50/50 border border-slate-200 hover:border-sky-300 transition-all shadow-2xs group flex items-start gap-3.5"
+          >
+            <div className="p-2.5 rounded-xl bg-emerald-100/70 text-emerald-700 group-hover:scale-105 transition-transform shrink-0">
+              <FileCheck2 className="h-5 w-5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-xs font-bold text-slate-900 group-hover:text-emerald-800 transition-colors">
+                Contratos & Fornecimento
+              </h3>
+              <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
+                Vigências, atas SRP e ordens de compra
+              </p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all shrink-0 mt-1" />
+          </Link>
         </div>
       </div>
 
-      {/* Grid com os 14 Tipos de Processos Solicitados */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {CATEGORIAS_CONFIG.map((cat) => {
-          const totalItens = contadores[cat.id] || 0;
+      {/* 2. Diretório de Modalidades com Navegação Limpa */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-bold text-slate-900">
+              Consultar por Modalidade de Contratação
+            </h2>
+            <p className="text-xs text-slate-500">
+              Selecione o instrumento jurídico para localizar processos e documentos
+            </p>
+          </div>
 
-          return (
-            <div
-              key={cat.id}
-              onClick={() => setSelectedCategoria(cat)}
-              className="bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:shadow-md p-4 transition-all cursor-pointer flex flex-col justify-between group hover:border-sky-400 relative overflow-hidden"
-            >
-              <div className="space-y-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="p-2.5 rounded-lg bg-slate-50 group-hover:bg-sky-50 text-slate-700 group-hover:text-sky-850 border border-slate-200/80 group-hover:border-sky-300 transition-colors shrink-0">
-                    <CategoriaIcon name={cat.iconName} className="h-5 w-5" />
+          <div className="relative w-full sm:w-64">
+            <Search className="h-3.5 w-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Filtrar tipo..."
+              value={buscaModalidade}
+              onChange={(e) => setBuscaModalidade(e.target.value)}
+              className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500 bg-white"
+            />
+          </div>
+        </div>
+
+        {/* Abas Suaves de Organização */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs font-medium border-b border-slate-200">
+          <button
+            type="button"
+            onClick={() => setAbaModalidades("comuns")}
+            className={`px-3 py-1.5 rounded-lg transition-all ${
+              abaModalidades === "comuns"
+                ? "bg-slate-900 text-white font-semibold shadow-2xs"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+            }`}
+          >
+            Mais Utilizadas
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setAbaModalidades("contratos")}
+            className={`px-3 py-1.5 rounded-lg transition-all ${
+              abaModalidades === "contratos"
+                ? "bg-slate-900 text-white font-semibold shadow-2xs"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+            }`}
+          >
+            Contratos & Atas
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setAbaModalidades("especiais")}
+            className={`px-3 py-1.5 rounded-lg transition-all ${
+              abaModalidades === "especiais"
+                ? "bg-slate-900 text-white font-semibold shadow-2xs"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+            }`}
+          >
+            Parcerias & Especiais
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setAbaModalidades("todas")}
+            className={`px-3 py-1.5 rounded-lg transition-all ${
+              abaModalidades === "todas"
+                ? "bg-slate-900 text-white font-semibold shadow-2xs"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+            }`}
+          >
+            Todas as Modalidades ({CATEGORIAS_CONFIG.length})
+          </button>
+        </div>
+
+        {/* Grade de Modalidades com Design Calmo e Sem Botões Repetidos */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          {categoriasFiltradas.map((cat) => {
+            const totalItens = contadores[cat.id] || 0;
+
+            return (
+              <div
+                key={cat.id}
+                onClick={() => setSelectedCategoria(cat)}
+                className="p-4 rounded-2xl bg-white hover:bg-slate-50/70 border border-slate-200/90 hover:border-sky-300 transition-all cursor-pointer shadow-2xs group flex flex-col justify-between"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="p-2 rounded-xl bg-slate-100 group-hover:bg-sky-100/70 text-slate-700 group-hover:text-sky-800 transition-colors shrink-0">
+                      <CategoriaIcon name={cat.iconName} className="h-4 w-4" />
+                    </div>
+                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">
+                      {cat.sigla}
+                    </span>
                   </div>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${cat.corBadge}`}>
-                    {cat.sigla}
+
+                  <div>
+                    <h3 className="font-bold text-xs text-slate-900 group-hover:text-sky-900 transition-colors leading-snug">
+                      {cat.nome}
+                    </h3>
+                    <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">
+                      {cat.descricao}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                  <span className="text-[11px] font-medium text-slate-600">
+                    {totalItens} {cat.tipo === "CONTRATO" ? "contratos" : cat.tipo === "ATA" ? "atas" : totalItens === 1 ? "processo" : "processos"}
                   </span>
-                </div>
 
-                <div>
-                  <h3 className="font-black text-sm text-slate-900 group-hover:text-sky-950 transition-colors uppercase tracking-tight leading-snug">
-                    {cat.nome}
-                  </h3>
-                  <p className="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-relaxed">
-                    {cat.descricao}
-                  </p>
+                  <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-sky-600 group-hover:translate-x-0.5 transition-all" />
                 </div>
               </div>
-
-              <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                <span className="font-bold font-mono text-slate-700">
-                  {totalItens} {cat.tipo === "CONTRATO" ? "contratos" : cat.tipo === "ATA" ? "atas" : totalItens === 1 ? "processo" : "processos"}
-                </span>
-
-                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-sky-700 group-hover:text-sky-900 group-hover:translate-x-0.5 transition-all">
-                  <span>Acessar</span>
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </span>
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       {/* Modal Novo Processo */}

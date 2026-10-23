@@ -30,6 +30,7 @@ import {
   DocumentoElaborado,
   SolicitacaoCadastro,
   PermissaoModulo,
+  RegistroEmailEnviado,
 } from "./types";
 import {
   INITIAL_CONTROLE_CREDITOS,
@@ -43,10 +44,14 @@ import {
 } from "@/data/demandas-previas-data";
 import { getDaysRemaining } from "./utils";
 
-// -------------------------------------------------------------
-// SEED INICIAL REALISTA - SUPERINTENDÊNCIA DE GESTÃO DA SAÚDE
-// -------------------------------------------------------------
 
+// =============================================================
+// PLATAFORMA LIMPA PARA USO REAL EM PRODUÇÃO
+// Servidores, processos, trâmites e cadastros modelos purgados.
+// Dados orçamentários e créditos adicionais preservados 100%.
+// =============================================================
+
+// Usuário Administrador Oficial para Gestão e Homologação de Novos Servidores
 const INITIAL_USUARIOS: Usuario[] = [
   {
     id: "usr-coord-geral",
@@ -61,172 +66,32 @@ const INITIAL_USUARIOS: Usuario[] = [
     ativo: true,
     whatsapp: "(82) 99876-5432",
   },
-  {
-    id: "usr-1",
-    nome: "Dr. Carlos Eduardo Menezes",
-    email: "carlos.menezes@saude.gov.br",
-    cpf: "123.456.789-00",
-    cargo: "Superintendente de Gestão",
-    setor: "Superintendência Executiva",
-    perfil: "ADMINISTRADOR",
-    ativo: true,
-  },
-  {
-    id: "usr-2",
-    nome: "Mariana Alcantara Rios",
-    email: "mariana.rios@saude.gov.br",
-    cpf: "234.567.890-11",
-    cargo: "Diretora de Compras e Contratos",
-    setor: "Divisão de Contratos",
-    perfil: "GESTOR_CONTRATOS",
-    ativo: true,
-  },
-  {
-    id: "usr-3",
-    nome: "Felipe Bastos Oliveira",
-    email: "felipe.bastos@saude.gov.br",
-    cpf: "345.678.901-22",
-    cargo: "Fiscal Técnico Titular",
-    setor: "Assistência Farmacêutica",
-    perfil: "FISCAL_CONTRATO",
-    ativo: true,
-  },
-  {
-    id: "usr-4",
-    nome: "Tenente Roberto Nogueira",
-    email: "roberto.nogueira@saude.gov.br",
-    cpf: "456.789.012-33",
-    cargo: "Coordenador de Transportes e Frotas",
-    setor: "Coordenação de Transportes e Logística (TFD/Frota Municipal)",
-    perfil: "COORDENACAO_FROTAS",
-    ativo: true,
-  },
-  {
-    id: "usr-5",
-    nome: "Juliana Mendes Prado",
-    email: "juliana.prado@saude.gov.br",
-    cpf: "567.890.123-44",
-    cargo: "Procuradora Adjunta da Saúde",
-    setor: "Núcleo de Judicialização da Saúde",
-    perfil: "JUDICIALIZACAO",
-    ativo: true,
-  },
-  {
-    id: "usr-6",
-    nome: "Lucas Silveira Dantas",
-    email: "lucas.dantas@saude.gov.br",
-    cpf: "678.901.234-55",
-    cargo: "Diretor de Orçamento e Finanças",
-    setor: "Contabilidade e Orçamento",
-    perfil: "ORCAMENTO_FINANCAS",
-    ativo: true,
-  },
-  {
-    id: "usr-7",
-    nome: "Thiago Rocha Lima",
-    email: "thiago.rocha@saude.gov.br",
-    cpf: "789.012.345-66",
-    cargo: "Coordenador de Tecnologia da Informação",
-    setor: "Núcleo de TI e Prontuário Eletrônico",
-    perfil: "TI",
-    ativo: true,
-  },
 ];
 
-const INITIAL_FORNECEDORES: Fornecedor[] = [
-  {
-    id: "forn-1",
-    cnpj: "33.000.167/0001-01",
-    razaoSocial: "Vibra Energia S/A - Posto Central Saúde Ltda",
-    nomeFantasia: "Posto Central de Combustíveis",
-    contato: "Valter Silveira",
-    email: "licitacoes@postocentral.com.br",
-    telefone: "(31) 3220-4001",
-    endereco: "Av. do Contorno, 4500",
-    cidade: "Belo Horizonte",
-    uf: "MG",
-    ativo: true,
-  },
-  {
-    id: "forn-2",
-    cnpj: "12.345.678/0001-90",
-    razaoSocial: "Hospitalar Distribuidora de Medicamentos e Insumos S/A",
-    nomeFantasia: "Hospitalar Farma Minas",
-    contato: "Renata Vasconcelos",
-    email: "publico@hospitalarfarma.com.br",
-    telefone: "(31) 3340-9000",
-    endereco: "Rodovia Anel Rodoviário, Km 12",
-    cidade: "Belo Horizonte",
-    uf: "MG",
-    ativo: true,
-  },
-  {
-    id: "forn-3",
-    cnpj: "04.992.831/0001-44",
-    razaoSocial: "COOPEVALE - Cooperativa Médica Vale da Saúde",
-    nomeFantasia: "Coopevale Médicos Plantonistas",
-    contato: "Dr. André Villas",
-    email: "contratos@coopevale.med.br",
-    telefone: "(31) 3450-7788",
-    endereco: "Rua Paraíba, 800 - Sala 1201",
-    cidade: "Belo Horizonte",
-    uf: "MG",
-    ativo: true,
-  },
-  {
-    id: "forn-4",
-    cnpj: "18.774.221/0001-33",
-    razaoSocial: "AutoLoc Serviços de Locação e Ambulâncias Ltda",
-    nomeFantasia: "AutoLoc Resgate",
-    contato: "Marcos Paulo",
-    email: "gestao@autolocsaude.com.br",
-    telefone: "(31) 3660-1234",
-    endereco: "Av. Cristiano Machado, 10200",
-    cidade: "Belo Horizonte",
-    uf: "MG",
-    ativo: true,
-  },
-  {
-    id: "forn-5",
-    cnpj: "29.441.110/0001-52",
-    razaoSocial: "White Martins Gases Industriais e Medicinais Ltda",
-    nomeFantasia: "White Martins Oxigênio Hospitalar",
-    contato: "Sandra Guimarães",
-    email: "hospitalar@whitemartins.com.br",
-    telefone: "(31) 3390-5000",
-    endereco: "Distrito Industrial Simão da Cunha",
-    cidade: "Contagem",
-    uf: "MG",
-    ativo: true,
-  },
-  {
-    id: "forn-6",
-    cnpj: "08.123.987/0001-19",
-    razaoSocial: "Automec Assistência e Manutenção de Frotas Ltda",
-    nomeFantasia: "Oficina Especializada Automec",
-    contato: "Geraldo Morais",
-    email: "contato@automecmg.com.br",
-    telefone: "(31) 3398-2233",
-    endereco: "Av. Teresa Cristina, 2100",
-    cidade: "Belo Horizonte",
-    uf: "MG",
-    ativo: true,
-  },
-  {
-    id: "forn-7",
-    cnpj: "14.552.339/0001-81",
-    razaoSocial: "TechSaúde Soluções em Informática e Redes Ltda",
-    nomeFantasia: "TechSaúde Informática",
-    contato: "Guilherme Santos",
-    email: "governo@techsaude.inf.br",
-    telefone: "(31) 3211-9876",
-    endereco: "Av. Afonso Pena, 3110",
-    cidade: "Belo Horizonte",
-    uf: "MG",
-    ativo: true,
-  },
-];
+// Fila de solicitações de cadastro limpa para receber os cadastros reais dos servidores
+const INITIAL_SOLICITACOES_CADASTRO: SolicitacaoCadastro[] = [];
 
+// Fornecedores e Contratos oficiais (limpos para início oficial)
+const INITIAL_FORNECEDORES: Fornecedor[] = [];
+const INITIAL_PCA: ItemPCA[] = [];
+const INITIAL_PROCESSOS: ProcessoAdministrativo[] = [];
+const INITIAL_ATAS: AtaRegistroPrecos[] = [];
+const INITIAL_CONTRATOS: Contrato[] = [];
+const INITIAL_ORDENS: OrdemFornecimentoServico[] = [];
+const INITIAL_PAGAMENTOS: PagamentoLiquidacao[] = [];
+const INITIAL_VEICULOS: Veiculo[] = [];
+const INITIAL_MOTORISTAS: Motorista[] = [];
+const INITIAL_ESCALAS: EscalaPlantao24x7[] = [];
+const INITIAL_ABASTECIMENTOS: Abastecimento[] = [];
+const INITIAL_MANUTENCOES: ManutencaoVeiculo[] = [];
+const INITIAL_ATIVOS_TI: AtivoTI[] = [];
+const INITIAL_LICENCAS: LicencaSoftware[] = [];
+const INITIAL_JUDICIAL: DemandaJudicial[] = [];
+const INITIAL_DOCUMENTOS_ELABORADOS: DocumentoElaborado[] = [];
+
+// -------------------------------------------------------------
+// DADOS ORÇAMENTÁRIOS E CRÉDITOS ADICIONAIS PRESERVADOS 100%
+// -------------------------------------------------------------
 const INITIAL_DOTACÕES: DotacaoOrcamentaria[] = [
   {
     id: "dot-1",
@@ -303,1424 +168,12 @@ const INITIAL_CREDITOS: CreditoAdicional[] = [
   },
 ];
 
-const INITIAL_PCA: ItemPCA[] = [
-  {
-    id: "pca-1",
-    anoExercicio: 2025,
-    codigoItem: "PCA-2025-014",
-    descricao: "Aquisição centralizada de medicamentos essenciais da RENAME",
-    categoria: "Medicamentos e Farmácia",
-    valorEstimado: 3800000,
-    status: "CONTRATADO",
-    dataPrevisaoContratacao: "2025-02-15",
-  },
-  {
-    id: "pca-2",
-    anoExercicio: 2025,
-    codigoItem: "PCA-2025-021",
-    descricao: "Fornecimento de combustíveis (Diesel S10 e Gasolina Comum)",
-    categoria: "Combustíveis e Lubrificantes",
-    valorEstimado: 950000,
-    status: "CONTRATADO",
-    dataPrevisaoContratacao: "2025-01-20",
-  },
-  {
-    id: "pca-3",
-    anoExercicio: 2025,
-    codigoItem: "PCA-2025-032",
-    descricao: "Locação de ambulâncias e veículos para transporte sanitário e TFD",
-    categoria: "Veículos e Locação",
-    valorEstimado: 1500000,
-    status: "CONTRATADO",
-    dataPrevisaoContratacao: "2025-03-10",
-  },
-  {
-    id: "pca-4",
-    anoExercicio: 2025,
-    codigoItem: "PCA-2025-045",
-    descricao: "Fornecimento contínuo de oxigênio medicinal líquido e gasoso",
-    categoria: "Gases Medicinais",
-    valorEstimado: 1200000,
-    status: "CONTRATADO",
-    dataPrevisaoContratacao: "2025-03-30",
-  },
-  {
-    id: "pca-5",
-    anoExercicio: 2025,
-    codigoItem: "PCA-2025-058",
-    descricao: "Contratação de Cooperativa Médica para UPAs e Pronto Atendimento",
-    categoria: "Serviços Médicos",
-    valorEstimado: 5500000,
-    status: "CONTRATADO",
-    dataPrevisaoContratacao: "2025-04-05",
-  },
-  {
-    id: "pca-6",
-    anoExercicio: 2025,
-    codigoItem: "PCA-2025-072",
-    descricao: "Modernização do Parque Tecnológico das 18 Unidades Básicas de Saúde",
-    categoria: "Tecnologia da Informação",
-    valorEstimado: 600000,
-    status: "EM_LICITACAO",
-    dataPrevisaoContratacao: "2025-11-20",
-  },
-  {
-    id: "pca-7",
-    anoExercicio: 2025,
-    codigoItem: "PCA-2025-089",
-    descricao: "Manutenção preventiva e corretiva da frota de veículos da Saúde",
-    categoria: "Manutenção Mecânica",
-    valorEstimado: 450000,
-    status: "CONTRATADO",
-    dataPrevisaoContratacao: "2025-04-12",
-  },
-];
-
-const INITIAL_PROCESSOS: ProcessoAdministrativo[] = [
-  {
-    id: "proc-1",
-    numeroProcesso: "PA-2025/00142",
-    numeroCapa: "CP-142/25",
-    objeto: "Registro de Preços para aquisição centralizada de medicamentos da Farmácia Básica Municipal (Lei nº 14.133/2021)",
-    modalidade: "Registro de Preços - Aquisição",
-    setorAtual: "Divisão de Contratos",
-    status: "CONTRATADO",
-    statusDescritivo: "Processo encontra-se no setor de COTAÇÃO desde 05/10/2026.",
-    dataEntradaSetor: "2026-10-05",
-    itemPcaId: "pca-1",
-    valorEstimado: 3800000,
-    createdAt: "2025-01-15T09:00:00Z",
-    updatedAt: "2025-03-01T14:30:00Z",
-  },
-  {
-    id: "proc-2",
-    numeroProcesso: "PA-2025/00289",
-    numeroCapa: "CP-289/25",
-    objeto: "Locação de ambulâncias para transporte inter-hospitalar e eletivo com manutenção integral",
-    modalidade: "Pregão sem Registro de Preços",
-    setorAtual: "Divisão de Contratos",
-    status: "CONTRATADO",
-    statusDescritivo: "Processo encontra-se no setor de ANÁLISE JURÍDICA desde 08/10/2026.",
-    dataEntradaSetor: "2026-10-08",
-    itemPcaId: "pca-3",
-    valorEstimado: 1500000,
-    createdAt: "2025-02-01T10:00:00Z",
-    updatedAt: "2025-03-20T17:00:00Z",
-  },
-  {
-    id: "proc-3",
-    numeroProcesso: "PA-2025/00315",
-    numeroCapa: "CP-315/25",
-    objeto: "Fornecimento continuado de combustíveis (Gasolina Comum e Diesel S10) via cartão magnético para a frota da Saúde",
-    modalidade: "Registro de Preços - Aquisição",
-    setorAtual: "Coordenação de Transportes",
-    status: "CONTRATADO",
-    statusDescritivo: "Processo encontra-se no setor de PESQUISA DE PREÇOS desde 02/10/2026.",
-    dataEntradaSetor: "2026-10-02",
-    itemPcaId: "pca-2",
-    valorEstimado: 950000,
-    createdAt: "2025-01-10T08:30:00Z",
-    updatedAt: "2025-02-18T15:00:00Z",
-  },
-  {
-    id: "proc-4",
-    numeroProcesso: "PA-2025/00480",
-    numeroCapa: "CP-480/25",
-    objeto: "Aquisição de computadores, nobreaks e licenças corporativas para informatização completa das 18 Unidades Básicas de Saúde (e-SUS PEC)",
-    modalidade: "Pregão sem Registro de Preços",
-    setorAtual: "Assessoria Jurídica da Saúde",
-    status: "JURIDICO",
-    itemPcaId: "pca-6",
-    valorEstimado: 620000,
-    createdAt: "2025-08-01T14:00:00Z",
-    updatedAt: "2025-09-28T16:45:00Z",
-  },
-  {
-    id: "proc-5",
-    numeroProcesso: "PA-2025/00520",
-    numeroCapa: "CP-520/25",
-    objeto: "Contratação de cooperativa de médicos para cobertura ininterrupta de plantões de urgência e emergência nas UPAs 24 Horas",
-    modalidade: "Inexigibilidade de Licitação",
-    setorAtual: "Divisão de Contratos",
-    status: "CONTRATADO",
-    itemPcaId: "pca-5",
-    valorEstimado: 8900000,
-    createdAt: "2025-03-05T09:15:00Z",
-    updatedAt: "2025-04-10T11:00:00Z",
-  },
-  {
-    id: "proc-6",
-    numeroProcesso: "PA-2025/00611",
-    numeroCapa: "CP-611/25",
-    objeto: "Registro de Preços para fornecimento ininterrupto de oxigênio medicinal e locação de cilindros para hospitais e UPAs",
-    modalidade: "Registro de Preços - Aquisição",
-    setorAtual: "Divisão de Contratos",
-    status: "CONTRATADO",
-    itemPcaId: "pca-4",
-    valorEstimado: 1200000,
-    createdAt: "2025-02-15T11:00:00Z",
-    updatedAt: "2025-03-25T10:00:00Z",
-  },
-  {
-    id: "proc-7",
-    numeroProcesso: "PA-2025/00730",
-    numeroCapa: "CP-730/25",
-    objeto: "Dispensa de Licitação para aquisição direta de testes rápidos de antígeno para dengue, zika e chikungunya para a Rede de Atenção Básica",
-    modalidade: "Dispensa",
-    setorAtual: "Superintendência de Vigilância em Saúde (SUVIG)",
-    status: "FASE_PREPARATORIA",
-    valorEstimado: 54000,
-    createdAt: "2025-09-01T08:30:00Z",
-    updatedAt: "2025-09-15T10:00:00Z",
-    itensProcesso: [
-      { id: "it-7-1", numeroItem: 1, descricao: "Teste Rápido Imunocromatográfico Dengue NS1/IgG/IgM", unidadeMedida: "TESTE", quantidade: 2000, valorUnitarioEstimado: 18.0, valorTotalEstimado: 36000 },
-      { id: "it-7-2", numeroItem: 2, descricao: "Lancetas retráteis descartáveis estéreis 28G", unidadeMedida: "UNIDADE", quantidade: 2000, valorUnitarioEstimado: 0.5, valorTotalEstimado: 1000 },
-      { id: "it-7-3", numeroItem: 3, descricao: "Teste Rápido de Antígeno para Chikungunya IgM/IgG", unidadeMedida: "TESTE", quantidade: 1000, valorUnitarioEstimado: 17.0, valorTotalEstimado: 17000 },
-    ],
-  },
-  {
-    id: "proc-8",
-    numeroProcesso: "PA-2025/00912",
-    numeroCapa: "CP-912/25",
-    objeto: "Contratação Emergencial por Dispensa para aquisição de dietas enterais de alta densidade e fórmulas nutricionais infantis especiais",
-    modalidade: "Emergencial",
-    setorAtual: "Superintendência de Atenção à Saúde (SAS)",
-    status: "JURIDICO",
-    valorEstimado: 145000,
-    createdAt: "2025-09-10T11:00:00Z",
-    updatedAt: "2025-09-22T14:15:00Z",
-    itensProcesso: [
-      { id: "it-8-1", numeroItem: 1, descricao: "Fórmula Nutricional Enteral Polimérica Hipercalórica 1.5 kcal/ml", unidadeMedida: "LITRO", quantidade: 1500, valorUnitarioEstimado: 58.0, valorTotalEstimado: 87000 },
-      { id: "it-8-2", numeroItem: 2, descricao: "Fórmula Infantil com Proteína Extensamente Hidrolisada 400g", unidadeMedida: "LATA", quantidade: 800, valorUnitarioEstimado: 72.5, valorTotalEstimado: 58000 },
-    ],
-  },
-  {
-    id: "proc-9",
-    numeroProcesso: "PA-2025/01015",
-    numeroCapa: "CP-1015/25",
-    objeto: "Adesão de Ata de Registro de Preços (Carona) nº 12/2025 do Consórcio Regional de Saúde para aquisição de insumos hospitalares e descartáveis",
-    modalidade: "Adesão de Ata",
-    setorAtual: "Divisão de Contratos",
-    status: "FASE_PREPARATORIA",
-    valorEstimado: 210000,
-    createdAt: "2025-08-20T09:00:00Z",
-    updatedAt: "2025-09-18T16:00:00Z",
-    itensProcesso: [
-      { id: "it-9-1", numeroItem: 1, descricao: "Seringa descartável 10ml com bico Luer Lock", unidadeMedida: "UNIDADE", quantidade: 100000, valorUnitarioEstimado: 0.85, valorTotalEstimado: 85000 },
-      { id: "it-9-2", numeroItem: 2, descricao: "Agulha descartável estéril 25x7 para injeção", unidadeMedida: "UNIDADE", quantidade: 150000, valorUnitarioEstimado: 0.20, valorTotalEstimado: 30000 },
-      { id: "it-9-3", numeroItem: 3, descricao: "Luvas cirúrgicas estéreis látex tamanho 7.5", unidadeMedida: "PAR", quantidade: 50000, valorUnitarioEstimado: 1.90, valorTotalEstimado: 95000 },
-    ],
-  },
-  {
-    id: "proc-10",
-    numeroProcesso: "PA-2025/01120",
-    numeroCapa: "CP-1120/25",
-    objeto: "Contratação Direta de serviços postais e telegráficos oficiais para remessa e notificação de atos da Vigilância Sanitária e Fiscalização em Saúde",
-    modalidade: "Contratação Direta",
-    setorAtual: "Assessoria Jurídica da Saúde",
-    status: "FASE_PREPARATORIA",
-    valorEstimado: 78000,
-    createdAt: "2025-08-05T14:30:00Z",
-    updatedAt: "2025-09-02T11:20:00Z",
-    itensProcesso: [
-      { id: "it-10-1", numeroItem: 1, descricao: "Serviços de envio de cartas registradas com aviso de recebimento (AR Digital)", unidadeMedida: "ENVIO", quantidade: 12000, valorUnitarioEstimado: 6.5, valorTotalEstimado: 78000 },
-    ],
-  },
-  {
-    id: "proc-11",
-    numeroProcesso: "PA-2025/01205",
-    numeroCapa: "CP-1205/25",
-    objeto: "Concessão e Liquidação de Diárias a servidores públicos da Saúde para transporte interestadual de pacientes em TFD de alta complexidade",
-    modalidade: "Diárias",
-    setorAtual: "Coordenação de Transportes e Frotas",
-    status: "FASE_PREPARATORIA",
-    valorEstimado: 18400,
-    createdAt: "2025-09-15T09:10:00Z",
-    updatedAt: "2025-09-28T10:40:00Z",
-    itensProcesso: [
-      { id: "it-11-1", numeroItem: 1, descricao: "Diárias para deslocamento com pernoite para transporte intermunicipal/TFD", unidadeMedida: "DIÁRIA", quantidade: 40, valorUnitarioEstimado: 320.0, valorTotalEstimado: 12800 },
-      { id: "it-11-2", numeroItem: 2, descricao: "Diárias sem pernoite para viagens de tratamento sanitário contínuo", unidadeMedida: "DIÁRIA", quantidade: 35, valorUnitarioEstimado: 160.0, valorTotalEstimado: 5600 },
-    ],
-  },
-  {
-    id: "proc-12",
-    numeroProcesso: "PA-2025/01301",
-    numeroCapa: "CP-1301/25",
-    objeto: "Credenciamento de clínicas médicas e laboratórios especializados para realização de exames complementares de diagnóstico por imagem e patologia clínica",
-    modalidade: "Credenciamento",
-    setorAtual: "Superintendência de Regulação e Controle (SURCAA)",
-    status: "LICITACAO",
-    valorEstimado: 1850000,
-    createdAt: "2025-07-10T10:00:00Z",
-    updatedAt: "2025-08-30T17:00:00Z",
-    itensProcesso: [
-      { id: "it-12-1", numeroItem: 1, descricao: "Ressonância Magnética com contraste", unidadeMedida: "EXAME", quantidade: 1200, valorUnitarioEstimado: 450.0, valorTotalEstimado: 540000 },
-      { id: "it-12-2", numeroItem: 2, descricao: "Tomografia Computadorizada Multislice de Abdome e Tórax", unidadeMedida: "EXAME", quantidade: 2500, valorUnitarioEstimado: 260.0, valorTotalEstimado: 650000 },
-      { id: "it-12-3", numeroItem: 3, descricao: "Ultrassonografia com Doppler Colorido Vascular", unidadeMedida: "EXAME", quantidade: 4400, valorUnitarioEstimado: 150.0, valorTotalEstimado: 660000 },
-    ],
-  },
-  {
-    id: "proc-13",
-    numeroProcesso: "PA-2025/01410",
-    numeroCapa: "CP-1410/25",
-    objeto: "Edital de Chamamento Público para seleção de Organização da Sociedade Civil (OSC) visando à execução do Projeto 'Saúde Mental Integrada'",
-    modalidade: "Chamamento Público",
-    setorAtual: "Comissão Especial de Seleção de Parcerias MROSC",
-    status: "LICITACAO",
-    valorEstimado: 920000,
-    createdAt: "2025-06-15T08:00:00Z",
-    updatedAt: "2025-07-20T15:30:00Z",
-    itensProcesso: [
-      { id: "it-13-1", numeroItem: 1, descricao: "Execução descentralizada de oficinas terapêuticas e reinserção psicossocial", unidadeMedida: "MÊS", quantidade: 12, valorUnitarioEstimado: 76666.67, valorTotalEstimado: 920000 },
-    ],
-  },
-  {
-    id: "proc-14",
-    numeroProcesso: "PA-2025/01520",
-    numeroCapa: "CP-1520/25",
-    objeto: "Termo de Colaboração com a APAE de Arapiraca para oferta continuada de atendimentos multiprofissionais em reabilitação física e intelectual",
-    modalidade: "Termo de Colaboração",
-    setorAtual: "Superintendência de Gestão do Trabalho e Educação na Saúde (SGTES)",
-    status: "CONTRATADO",
-    valorEstimado: 680000,
-    createdAt: "2025-04-10T11:00:00Z",
-    updatedAt: "2025-05-18T16:00:00Z",
-    itensProcesso: [
-      { id: "it-14-1", numeroItem: 1, descricao: "Atendimento integrado em Fisioterapia Neurofuncional, Fonoaudiologia e Terapia Ocupacional", unidadeMedida: "ATENDIMENTO", quantidade: 3600, valorUnitarioEstimado: 188.89, valorTotalEstimado: 680000 },
-    ],
-  },
-  {
-    id: "proc-15",
-    numeroProcesso: "PA-2025/01630",
-    numeroCapa: "CP-1630/25",
-    objeto: "Termo de Fomento em parceria com a Pastoral da Criança para vigilância e promoção do aleitamento materno e combate à desnutrição",
-    modalidade: "Termo de Fomento",
-    setorAtual: "Superintendência de Atenção à Saúde (SAS)",
-    status: "CONTRATADO",
-    valorEstimado: 240000,
-    createdAt: "2025-05-02T13:40:00Z",
-    updatedAt: "2025-06-12T10:15:00Z",
-    itensProcesso: [
-      { id: "it-15-1", numeroItem: 1, descricao: "Capacitação comunitária e visitas domiciliares de suporte nutricional e puericultura", unidadeMedida: "MÊS", quantidade: 12, valorUnitarioEstimado: 20000.0, valorTotalEstimado: 240000 },
-    ],
-  },
-];
-
-const INITIAL_ATAS: AtaRegistroPrecos[] = [
-  {
-    id: "ata-1",
-    numeroAta: "ARP nº 042/2025",
-    processoOrigemId: "proc-1",
-    fornecedorId: "forn-2",
-    objeto: "Registro de Preços para Medicamentos da Farmácia Básica Municipal",
-    vigenciaInicio: "2025-03-01",
-    vigenciaFim: "2026-03-01",
-    valorTotalRegistrado: 3800000,
-    saldoTotalDisponivel: 2450000,
-    status: "Ativa",
-    itens: [
-      {
-        id: "item-ata-1",
-        ataId: "ata-1",
-        codigoItem: "MED-001",
-        descricao: "Insulina Glargina 100 UI/ml refil com 3ml para caneta aplicadora",
-        unidadeMedida: "FRASCO",
-        quantidadeContratada: 12000,
-        quantidadeDisponivel: 8200,
-        valorUnitario: 85.0,
-        saldoItem: 697000.0,
-      },
-      {
-        id: "item-ata-2",
-        ataId: "ata-1",
-        codigoItem: "MED-002",
-        descricao: "Amoxicilina + Clavulanato de Potássio 875mg + 125mg comprimido",
-        unidadeMedida: "COMPRIMIDO",
-        quantidadeContratada: 150000,
-        quantidadeDisponivel: 95000,
-        valorUnitario: 3.2,
-        saldoItem: 304000.0,
-      },
-      {
-        id: "item-ata-3",
-        ataId: "ata-1",
-        codigoItem: "MED-003",
-        descricao: "Dipirona Monoidratada 500mg/ml solução injetável ampola 2ml",
-        unidadeMedida: "AMPOLA",
-        quantidadeContratada: 200000,
-        quantidadeDisponivel: 140000,
-        valorUnitario: 1.45,
-        saldoItem: 203000.0,
-      },
-    ],
-  },
-  {
-    id: "ata-2",
-    numeroAta: "ARP nº 058/2025",
-    processoOrigemId: "proc-6",
-    fornecedorId: "forn-5",
-    objeto: "Registro de Preços para fornecimento de Oxigênio Medicinal Líquido e Gasoso",
-    vigenciaInicio: "2025-03-25",
-    vigenciaFim: "2026-03-25",
-    valorTotalRegistrado: 1200000,
-    saldoTotalDisponivel: 780000,
-    status: "Ativa",
-    itens: [
-      {
-        id: "item-ata-4",
-        ataId: "ata-2",
-        codigoItem: "GAS-001",
-        descricao: "Oxigênio Medicinal Gasoso a granel (m³)",
-        unidadeMedida: "M3",
-        quantidadeContratada: 50000,
-        quantidadeDisponivel: 32500,
-        valorUnitario: 16.0,
-        saldoItem: 520000.0,
-      },
-    ],
-  },
-];
-
-const INITIAL_CONTRATOS: Contrato[] = [
-  {
-    id: "ct-1",
-    numeroContrato: "CT-2025/012",
-    processoOrigemId: "proc-3",
-    fornecedorId: "forn-1",
-    objeto: "Fornecimento continuado de combustíveis (Diesel S10 e Gasolina Comum) para veículos da Frota Municipal, TFD e Vigilância em Saúde",
-    dataAssinatura: "2025-02-18",
-    vigenciaInicio: "2025-02-18",
-    vigenciaFim: "2025-11-22", // Expira em ~45 dias! Alerta de 60/30 dias
-    valorGlobal: 850000,
-    saldoFinanceiroAtual: 342150,
-    fiscalTitularId: "usr-4",
-    fiscalTitularNome: "Tenente Roberto Nogueira",
-    fiscalSubstitutoId: "usr-2",
-    fiscalSubstitutoNome: "Mariana Alcantara Rios",
-    status: "Vigente",
-    itens: [
-      {
-        id: "item-ct-1",
-        contratoId: "ct-1",
-        codigoItem: "COMB-01",
-        descricao: "Óleo Diesel S10 para Ambulâncias Municipais e Vans TFD",
-        unidadeMedida: "LITRO",
-        quantidadeContratada: 90000,
-        quantidadeDisponivel: 34100,
-        valorUnitario: 6.25,
-        saldoItem: 213125,
-        dotacoes: [
-          {
-            id: "dot-item-1a",
-            programaDeTrabalho: "10.302.0012.2050",
-            programaNome: "Manutenção dos Serviços de Urgência, Emergência e TFD (SAMU 192)",
-            elementoDespesa: "3.3.90.30 - Combustíveis e Lubrificantes Automotivos",
-            fonteRecurso: "1.600.0000 - Bloco de Manutenção SUS - MAC",
-            saldoDotacaoItem: 149187.50,
-            quantidadeDisponivelDotacao: 23870,
-            percentual: 70,
-          },
-          {
-            id: "dot-item-1b",
-            programaDeTrabalho: "10.301.0012.2045",
-            programaNome: "Atenção Básica e Estratégia de Saúde da Família (ESF / UBS)",
-            elementoDespesa: "3.3.90.30 - Combustíveis e Lubrificantes Automotivos",
-            fonteRecurso: "1.500.1002 - Receitas de Impostos (Saúde 15%)",
-            saldoDotacaoItem: 63937.50,
-            quantidadeDisponivelDotacao: 10230,
-            percentual: 30,
-          },
-        ],
-      },
-      {
-        id: "item-ct-2",
-        contratoId: "ct-1",
-        codigoItem: "COMB-02",
-        descricao: "Gasolina Comum para frota leve e fiscalização de Vigilância Sanitária",
-        unidadeMedida: "LITRO",
-        quantidadeContratada: 50000,
-        quantidadeDisponivel: 21504,
-        valorUnitario: 6.0,
-        saldoItem: 129025,
-        dotacoes: [
-          {
-            id: "dot-item-2a",
-            programaDeTrabalho: "10.304.0012.2060",
-            programaNome: "Vigilância em Saúde, Sanitária e Epidemiológica Municipal",
-            elementoDespesa: "3.3.90.30 - Combustíveis e Lubrificantes Automotivos",
-            fonteRecurso: "1.602.0000 - Bloco de Vigilância em Saúde SUS",
-            saldoDotacaoItem: 77415.00,
-            quantidadeDisponivelDotacao: 12902,
-            percentual: 60,
-          },
-          {
-            id: "dot-item-2b",
-            programaDeTrabalho: "10.122.0001.2010",
-            programaNome: "Gestão e Apoio Administrativo da Secretaria Municipal de Saúde",
-            elementoDespesa: "3.3.90.30 - Combustíveis e Lubrificantes Automotivos",
-            fonteRecurso: "1.500.1002 - Tesouro Municipal (Saúde)",
-            saldoDotacaoItem: 51610.00,
-            quantidadeDisponivelDotacao: 8602,
-            percentual: 40,
-          },
-        ],
-      },
-    ],
-    termosAditivos: [],
-  },
-  {
-    id: "ct-2",
-    numeroContrato: "CT-2025/034",
-    processoOrigemId: "proc-2",
-    fornecedorId: "forn-4",
-    objeto: "Locação de 03 Ambulâncias de Suporte Avançado (Tipo D - UTI Móvel) com manutenção e seguro total para atendimento 24h",
-    dataAssinatura: "2025-03-20",
-    vigenciaInicio: "2025-03-20",
-    vigenciaFim: "2026-03-20",
-    valorGlobal: 1440000,
-    saldoFinanceiroAtual: 840000,
-    fiscalTitularId: "usr-4",
-    fiscalTitularNome: "Tenente Roberto Nogueira",
-    status: "Vigente",
-    itens: [
-      {
-        id: "item-ct-3",
-        contratoId: "ct-2",
-        codigoItem: "LOC-01",
-        descricao: "Locação mensal de ambulância UTI Móvel Tipo D com seguro e rastreamento",
-        unidadeMedida: "MÊS",
-        quantidadeContratada: 36,
-        quantidadeDisponivel: 21,
-        valorUnitario: 40000,
-        saldoItem: 840000,
-        dotacoes: [
-          {
-            id: "dot-item-3a",
-            programaDeTrabalho: "10.302.0012.2050",
-            programaNome: "Manutenção dos Serviços de Urgência SAMU 192 e Transporte de Pacientes Graves",
-            elementoDespesa: "3.3.90.39 - Outros Serviços de Terceiros PJ (Locação de Ambulâncias)",
-            fonteRecurso: "1.600.0000 - Bloco de Manutenção SUS - MAC",
-            saldoDotacaoItem: 840000,
-            quantidadeDisponivelDotacao: 21,
-            percentual: 100,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: "ct-3",
-    numeroContrato: "CT-2025/055",
-    processoOrigemId: "proc-5",
-    fornecedorId: "forn-3",
-    objeto: "Contratação de Cooperativa Médica para gestão de plantões médicos de urgência e emergência nas UPAs 24 Horas",
-    dataAssinatura: "2025-04-10",
-    vigenciaInicio: "2025-04-10",
-    vigenciaFim: "2025-11-05", // Expira em 28 dias! Alerta CRÍTICO < 30 dias
-    valorGlobal: 5200000,
-    saldoFinanceiroAtual: 890000,
-    fiscalTitularId: "usr-1",
-    fiscalTitularNome: "Dr. Carlos Eduardo Menezes",
-    status: "Vigente",
-    itens: [
-      {
-        id: "item-ct-4",
-        contratoId: "ct-3",
-        codigoItem: "MED-PLANT",
-        descricao: "Hora de plantão médico clínico presencial 12h UPA",
-        unidadeMedida: "HORA",
-        quantidadeContratada: 26000,
-        quantidadeDisponivel: 4450,
-        valorUnitario: 200,
-        saldoItem: 890000,
-        dotacoes: [
-          {
-            id: "dot-item-4a",
-            programaDeTrabalho: "10.302.0012.2050",
-            programaNome: "Gestão de Serviços Médicos de Urgência e UPAs 24 Horas",
-            elementoDespesa: "3.3.90.39 - Outros Serviços de Terceiros PJ (Serviços Médicos Especializados)",
-            fonteRecurso: "1.600.0000 - Bloco MAC",
-            saldoDotacaoItem: 623000,
-            quantidadeDisponivelDotacao: 3115,
-            percentual: 70,
-          },
-          {
-            id: "dot-item-4b",
-            programaDeTrabalho: "10.302.0012.2050",
-            programaNome: "Suporte Emergencial e Plantões Médicos Complementares",
-            elementoDespesa: "3.3.90.39 - Outros Serviços de Terceiros PJ (Serviços Médicos Especializados)",
-            fonteRecurso: "1.500.1002 - Tesouro Municipal (Saúde 15%)",
-            saldoDotacaoItem: 267000,
-            quantidadeDisponivelDotacao: 1335,
-            percentual: 30,
-          },
-        ],
-      },
-    ],
-    termosAditivos: [
-      {
-        id: "adit-1",
-        contratoId: "ct-3",
-        numeroTermo: "1º Termo Aditivo",
-        tipo: "VALOR",
-        valorAcrescido: 400000,
-        novaVigenciaFim: "2025-11-05",
-        justificativa: "Acréscimo de 8% devido à epidemia sazonal de arboviroses (Dengue/Chikungunya).",
-        dataAssinatura: "2025-06-15",
-      },
-    ],
-  },
-  {
-    id: "ct-4",
-    numeroContrato: "CT-2025/078",
-    ataOrigemId: "ata-1",
-    processoOrigemId: "proc-1",
-    fornecedorId: "forn-2",
-    objeto: "Fornecimento parcelado de Insulina Glargina e Amoxicilina derivado da Ata de Registro de Preços nº 042/2025",
-    dataAssinatura: "2025-03-10",
-    vigenciaInicio: "2025-03-10",
-    vigenciaFim: "2026-03-10",
-    valorGlobal: 1350000,
-    saldoFinanceiroAtual: 685000,
-    fiscalTitularId: "usr-3",
-    fiscalTitularNome: "Felipe Bastos Oliveira",
-    status: "Vigente",
-    itens: [
-      {
-        id: "item-ct-5",
-        contratoId: "ct-4",
-        codigoItem: "MED-001",
-        descricao: "Insulina Glargina 100 UI/ml refil com 3ml para caneta aplicadora",
-        unidadeMedida: "FRASCO",
-        quantidadeContratada: 10000,
-        quantidadeDisponivel: 5200,
-        valorUnitario: 85.0,
-        saldoItem: 442000.0,
-        dotacoes: [
-          {
-            id: "dot-item-5a",
-            programaDeTrabalho: "10.303.0012.2055",
-            programaNome: "Assistência Farmacêutica Básica e Medicamentos Especiais",
-            elementoDespesa: "3.3.90.30 - Material de Consumo (Medicamentos)",
-            fonteRecurso: "1.600.0000 - Custeio SUS Assistência Farmacêutica",
-            saldoDotacaoItem: 442000.0,
-            quantidadeDisponivelDotacao: 5200,
-            percentual: 100,
-          },
-        ],
-      },
-      {
-        id: "item-ct-6",
-        contratoId: "ct-4",
-        codigoItem: "MED-002",
-        descricao: "Amoxicilina + Clavulanato de Potássio 875mg + 125mg comprimido",
-        unidadeMedida: "COMPRIMIDO",
-        quantidadeContratada: 75000,
-        quantidadeDisponivel: 42000,
-        valorUnitario: 3.2,
-        saldoItem: 134400.0,
-        dotacoes: [
-          {
-            id: "dot-item-6a",
-            programaDeTrabalho: "10.303.0012.2055",
-            programaNome: "Assistência Farmacêutica Básica e Dispensação Geral",
-            elementoDespesa: "3.3.90.30 - Material de Consumo (Medicamentos)",
-            fonteRecurso: "1.600.0000 - Custeio SUS Assistência Farmacêutica",
-            saldoDotacaoItem: 80640.0,
-            quantidadeDisponivelDotacao: 25200,
-            percentual: 60,
-          },
-          {
-            id: "dot-item-6b",
-            programaDeTrabalho: "10.301.0012.2045",
-            programaNome: "Atenção Básica Municipal e Saúde da Família",
-            elementoDespesa: "3.3.90.30 - Material de Consumo (Medicamentos)",
-            fonteRecurso: "1.500.1002 - Tesouro Municipal (Contrapartida)",
-            saldoDotacaoItem: 53760.0,
-            quantidadeDisponivelDotacao: 16800,
-            percentual: 40,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: "ct-5",
-    numeroContrato: "CT-2025/090",
-    processoOrigemId: "proc-3",
-    fornecedorId: "forn-6",
-    objeto: "Serviços mecânicos de manutenção preventiva e corretiva com reposição de peças originais para a frota veicular da Saúde",
-    dataAssinatura: "2025-04-12",
-    vigenciaInicio: "2025-04-12",
-    vigenciaFim: "2026-04-12",
-    valorGlobal: 420000,
-    saldoFinanceiroAtual: 284500,
-    fiscalTitularId: "usr-4",
-    fiscalTitularNome: "Tenente Roberto Nogueira",
-    status: "Vigente",
-    itens: [
-      {
-        id: "item-ct-7",
-        contratoId: "ct-5",
-        codigoItem: "MANUT-01",
-        descricao: "Hora de serviço mecânico especializado em ambulâncias e veículos pesados",
-        unidadeMedida: "HORA",
-        quantidadeContratada: 1200,
-        quantidadeDisponivel: 812,
-        valorUnitario: 180,
-        saldoItem: 146160,
-        dotacoes: [
-          {
-            id: "dot-item-7a",
-            programaDeTrabalho: "10.302.0012.2050",
-            programaNome: "Manutenção de Ambulâncias do SAMU / Resgate Municipal",
-            elementoDespesa: "3.3.90.39 - Outros Serviços de Terceiros PJ",
-            fonteRecurso: "1.600.0000 - Bloco MAC",
-            saldoDotacaoItem: 102312,
-            quantidadeDisponivelDotacao: 568.4,
-            percentual: 70,
-          },
-          {
-            id: "dot-item-7b",
-            programaDeTrabalho: "10.122.0001.2010",
-            programaNome: "Manutenção da Frota Administrativa e Logística da Saúde",
-            elementoDespesa: "3.3.90.39 - Outros Serviços de Terceiros PJ",
-            fonteRecurso: "1.500.1002 - Tesouro Municipal",
-            saldoDotacaoItem: 43848,
-            quantidadeDisponivelDotacao: 243.6,
-            percentual: 30,
-          },
-        ],
-      },
-      {
-        id: "item-ct-8",
-        contratoId: "ct-5",
-        codigoItem: "MANUT-02",
-        descricao: "Peças e componentes de reposição automotiva genuína",
-        unidadeMedida: "VERBA",
-        quantidadeContratada: 204000,
-        quantidadeDisponivel: 138340,
-        valorUnitario: 1,
-        saldoItem: 138340,
-        dotacoes: [
-          {
-            id: "dot-item-8a",
-            programaDeTrabalho: "10.302.0012.2050",
-            programaNome: "Peças para Ambulâncias do SAMU / Resgate Municipal",
-            elementoDespesa: "3.3.90.30 - Material de Consumo (Peças)",
-            fonteRecurso: "1.600.0000 - Bloco MAC",
-            saldoDotacaoItem: 96838,
-            quantidadeDisponivelDotacao: 96838,
-            percentual: 70,
-          },
-          {
-            id: "dot-item-8b",
-            programaDeTrabalho: "10.122.0001.2010",
-            programaNome: "Peças para Frota Administrativa da Saúde",
-            elementoDespesa: "3.3.90.30 - Material de Consumo (Peças)",
-            fonteRecurso: "1.500.1002 - Tesouro Municipal",
-            saldoDotacaoItem: 41502,
-            quantidadeDisponivelDotacao: 41502,
-            percentual: 30,
-          },
-        ],
-      },
-    ],
-  },
-];
-
-const INITIAL_ORDENS: OrdemFornecimentoServico[] = [
-  {
-    id: "of-1",
-    numeroOF: "OF-2025/0088",
-    contratoId: "ct-1",
-    contratoNumero: "CT-2025/012",
-    fornecedorNome: "Posto Central de Combustíveis",
-    dataEmissao: "2025-09-01T08:00:00Z",
-    prazoEntrega: "2025-09-30T23:59:00Z",
-    valorTotal: 54200,
-    status: "ENTREGUE",
-    observacoes: "Cota mensal de abastecimento para ambulâncias da frota municipal, vans de TFD e fiscalização sanitária.",
-    itens: [
-      {
-        id: "itof-1",
-        ordemId: "of-1",
-        itemContratoId: "item-ct-1",
-        descricao: "Óleo Diesel S10",
-        quantidadeSolicitada: 6000,
-        valorUnitario: 6.25,
-        valorTotal: 37500,
-      },
-      {
-        id: "itof-2",
-        ordemId: "of-1",
-        itemContratoId: "item-ct-2",
-        descricao: "Gasolina Comum",
-        quantidadeSolicitada: 2783.33,
-        valorUnitario: 6.0,
-        valorTotal: 16700,
-      },
-    ],
-  },
-  {
-    id: "of-2",
-    numeroOF: "OF-2025/0104",
-    contratoId: "ct-4",
-    contratoNumero: "CT-2025/078",
-    fornecedorNome: "Hospitalar Farma Minas",
-    dataEmissao: "2025-09-15T10:30:00Z",
-    prazoEntrega: "2025-09-25T18:00:00Z",
-    valorTotal: 170000,
-    status: "EMITIDA",
-    observacoes: "Lote emergencial de Insulina Glargina para abastecimento das 18 farmácias das UBS.",
-    itens: [
-      {
-        id: "itof-3",
-        ordemId: "of-2",
-        itemContratoId: "item-ct-5",
-        descricao: "Insulina Glargina 100 UI/ml",
-        quantidadeSolicitada: 2000,
-        valorUnitario: 85.0,
-        valorTotal: 170000,
-      },
-    ],
-  },
-];
-
-const INITIAL_PAGAMENTOS: PagamentoLiquidacao[] = [
-  {
-    id: "pag-1",
-    contratoId: "ct-1",
-    ordemId: "of-1",
-    numeroNotaFiscal: "NF-e 004128",
-    numeroEmpenho: "EMP-2025/001890",
-    numeroLiquidacao: "LIQ-2025/003411",
-    valorPago: 54200,
-    dataPagamento: "2025-09-18",
-    fonteRecursoId: "dot-3",
-    fonteRecursoNome: "1.500.1002 - Tesouro Municipal",
-    tipoFavorecido: "CONTRATADA",
-    status: "Liquidado",
-    observacoes: "Abastecimento do mês de Agosto/Setembro certificado pela Fiscalização de Frotas.",
-  },
-  {
-    id: "pag-2",
-    contratoId: "ct-3",
-    numeroNotaFiscal: "NF-e 001923",
-    numeroEmpenho: "EMP-2025/002400",
-    numeroLiquidacao: "LIQ-2025/004012",
-    valorPago: 385000,
-    dataPagamento: "2025-09-05",
-    fonteRecursoId: "dot-2",
-    fonteRecursoNome: "1.600.0000 - Bloco MAC",
-    tipoFavorecido: "CONTRATADA",
-    status: "Liquidado",
-    observacoes: "Plantões médicos realizados e atestados pelo Diretor Clínico das UPAs.",
-  },
-];
-
-const INITIAL_VEICULOS: Veiculo[] = [
-  {
-    id: "veic-1",
-    placa: "SAU-1A24",
-    modelo: "Sprinter 416 CDI Suporte Avançado (USA-01)",
-    marca: "Mercedes-Benz",
-    ano: 2024,
-    chassi: "8AC904678PB019284",
-    status: "PLANTAO_24_7",
-    tipo: "LOCADO",
-    capacidade: "UTI Móvel (1 Médico, 1 Enfermeiro, 1 Condutor, 1 Paciente)",
-    quilometragemAtual: 42800,
-    dataLicenciamento: "2025-12-15",
-    contratoLocacaoId: "ct-2",
-  },
-  {
-    id: "veic-2",
-    placa: "SAU-2B35",
-    modelo: "Master Ambulância Básico L2H2 (USB-02)",
-    marca: "Renault",
-    ano: 2023,
-    chassi: "93YMA1288PJ981240",
-    status: "PLANTAO_24_7",
-    tipo: "PROPRIO",
-    capacidade: "Suporte Básico (1 Condutor, 1 Técnico Enfermagem)",
-    quilometragemAtual: 68120,
-    dataLicenciamento: "2025-10-25", // Licenciamento a vencer em breve!
-  },
-  {
-    id: "veic-3",
-    placa: "SAU-3C46",
-    modelo: "Ducato Maxicargo Remoção (USB-03)",
-    marca: "Fiat",
-    ano: 2022,
-    chassi: "3C8DF4412LK812733",
-    status: "MANUTENCAO",
-    tipo: "PROPRIO",
-    capacidade: "Remoção Hospitalar Simples",
-    quilometragemAtual: 91400,
-    dataLicenciamento: "2025-11-30",
-  },
-  {
-    id: "veic-4",
-    placa: "SAU-4D57",
-    modelo: "Daily Minibus 19 Lugares - Tratamento Fora Domicílio (TFD)",
-    marca: "Iveco",
-    ano: 2023,
-    chassi: "93ZIV18290PA123491",
-    status: "EM_ROTA",
-    tipo: "PROPRIO",
-    capacidade: "18 Passageiros Pacientes Hemodiálise/Oncologia",
-    quilometragemAtual: 83500,
-    dataLicenciamento: "2026-02-28",
-  },
-  {
-    id: "veic-5",
-    placa: "SAU-5E68",
-    modelo: "Gol 1.0 Vigilância Sanitária e Epidemiológica",
-    marca: "Volkswagen",
-    ano: 2021,
-    chassi: "9BWAB45U9MP029381",
-    status: "DISPONIVEL",
-    tipo: "PROPRIO",
-    capacidade: "5 Passageiros (Fiscalização Sanitária)",
-    quilometragemAtual: 54100,
-    dataLicenciamento: "2025-11-10",
-  },
-];
-
-const INITIAL_MOTORISTAS: Motorista[] = [
-  {
-    id: "mot-1",
-    nome: "Marcos Vinicius de Souza",
-    matricula: "MAT-4890",
-    cnh: "04981726354",
-    categoriaCnh: "D (Com curso de Emergência e Resgate)",
-    validadeCnh: "2025-10-26", // Vence em 18 dias! Alerta CRÍTICO de CNH!
-    escalaTrabalho: "PLANTAO",
-    status: "Ativo",
-    telefone: "(31) 98844-1234",
-  },
-  {
-    id: "mot-2",
-    nome: "José Antônio Silveira",
-    matricula: "MAT-3210",
-    cnh: "01827364519",
-    categoriaCnh: "D",
-    validadeCnh: "2026-08-15",
-    escalaTrabalho: "PLANTAO",
-    status: "Ativo",
-    telefone: "(31) 99123-5566",
-  },
-  {
-    id: "mot-3",
-    nome: "Edmilson de Paula Cunha",
-    matricula: "MAT-5102",
-    cnh: "03928174620",
-    categoriaCnh: "D (Curso TFD / Coletivo de Passageiros)",
-    validadeCnh: "2026-04-10",
-    escalaTrabalho: "DIURNO",
-    status: "Ativo",
-    telefone: "(31) 98777-3322",
-  },
-  {
-    id: "mot-4",
-    nome: "Cláudio Barreto Fonseca",
-    matricula: "MAT-2980",
-    cnh: "05566778899",
-    categoriaCnh: "B",
-    validadeCnh: "2026-11-20",
-    escalaTrabalho: "DIURNO",
-    status: "Ativo",
-    telefone: "(31) 99881-2244",
-  },
-];
-
-const INITIAL_ESCALAS: EscalaPlantao24x7[] = [
-  {
-    id: "esc-1",
-    veiculoId: "veic-1",
-    veiculoPlaca: "SAU-1A24",
-    veiculoModelo: "USA-01 (UTI Móvel)",
-    motoristaId: "mot-1",
-    motoristaNome: "Marcos Vinicius de Souza",
-    turno: "Plantão Diurno 12h (07:00 às 19:00)",
-    dataInicio: "2025-10-08T07:00:00Z",
-    dataFim: "2025-10-08T19:00:00Z",
-    contatoEmergencia: "Central de Transportes da SMS (Ramal 101)",
-    statusProntidao: "Operacional / Em Prontidão Máxima",
-  },
-  {
-    id: "esc-2",
-    veiculoId: "veic-2",
-    veiculoPlaca: "SAU-2B35",
-    veiculoModelo: "USB-02 (Suporte Básico)",
-    motoristaId: "mot-2",
-    motoristaNome: "José Antônio Silveira",
-    turno: "Plantão Noturno 12h (19:00 às 07:00)",
-    dataInicio: "2025-10-08T19:00:00Z",
-    dataFim: "2025-10-09T07:00:00Z",
-    contatoEmergencia: "Central de Transportes da SMS (Ramal 102)",
-    statusProntidao: "Escalado",
-  },
-];
-
-const INITIAL_ABASTECIMENTOS: Abastecimento[] = [
-  {
-    id: "abast-1",
-    veiculoId: "veic-1",
-    veiculoPlaca: "SAU-1A24",
-    motoristaId: "mot-1",
-    motoristaNome: "Marcos Vinicius de Souza",
-    contratoCombustivelId: "ct-1",
-    dataHora: "2025-10-07T14:20:00Z",
-    quilometragem: 42720,
-    litros: 68.5,
-    tipoCombustivel: "Diesel S10",
-    valorTotal: 428.12,
-    cupomFiscal: "NFC-e 981240",
-    postoConveniado: "Posto Central Saúde (Unidade Contorno)",
-  },
-  {
-    id: "abast-2",
-    veiculoId: "veic-4",
-    veiculoPlaca: "SAU-4D57",
-    motoristaId: "mot-3",
-    motoristaNome: "Edmilson de Paula Cunha",
-    contratoCombustivelId: "ct-1",
-    dataHora: "2025-10-06T06:15:00Z",
-    quilometragem: 83120,
-    litros: 85.0,
-    tipoCombustivel: "Diesel S10",
-    valorTotal: 531.25,
-    cupomFiscal: "NFC-e 979512",
-    postoConveniado: "Posto Central Saúde (Unidade Contorno)",
-  },
-];
-
-const INITIAL_MANUTENCOES: ManutencaoVeiculo[] = [
-  {
-    id: "manut-1",
-    veiculoId: "veic-3",
-    veiculoPlaca: "SAU-3C46",
-    contratoManutencaoId: "ct-5",
-    osNumero: "OS-MEC-2025/082",
-    dataEntrada: "2025-10-05T09:00:00Z",
-    servicosRealizados: "Substituição da embreagem, pastilhas de freio dianteiras e sangria do circuito de freios",
-    valor: 3450,
-    status: "Em Execução na Oficina",
-  },
-];
-
-const INITIAL_ATIVOS_TI: AtivoTI[] = [
-  {
-    id: "ti-1",
-    patrimonio: "SMS-TI-00421",
-    tipo: "SERVIDOR",
-    marca: "Dell",
-    modelo: "PowerEdge R750 2x Xeon 32 Core 128GB RAM",
-    setorAlocado: "Datacenter Central / Sala de Servidores",
-    responsavel: "Thiago Rocha Lima",
-    status: "EM_USO",
-    dataAquisicao: "2023-05-10",
-  },
-  {
-    id: "ti-2",
-    patrimonio: "SMS-TI-00892",
-    tipo: "DESKTOP",
-    marca: "Dell",
-    modelo: "OptiPlex 3000 Core i5 16GB SSD 512GB",
-    setorAlocado: "Farmácia Central / Dispensação",
-    responsavel: "Felipe Bastos Oliveira",
-    status: "EM_USO",
-    dataAquisicao: "2024-02-18",
-  },
-  {
-    id: "ti-3",
-    patrimonio: "SMS-TI-01104",
-    tipo: "NOTEBOOK",
-    marca: "Lenovo",
-    modelo: "ThinkPad E14 AMD Ryzen 7 16GB",
-    setorAlocado: "Coordenação de Vigilância Epidemiológica",
-    responsavel: "Dr. Carlos Eduardo Menezes",
-    status: "EM_USO",
-    dataAquisicao: "2024-01-20",
-  },
-  {
-    id: "ti-4",
-    patrimonio: "SMS-TI-00650",
-    tipo: "SWITCH",
-    marca: "Cisco",
-    modelo: "Catalyst 2960-X 48 Portas Gigabit PoE+",
-    setorAlocado: "Central de Regulação de Leitos",
-    responsavel: "Thiago Rocha Lima",
-    status: "EM_USO",
-    dataAquisicao: "2023-08-14",
-  },
-];
-
-const INITIAL_LICENCAS: LicencaSoftware[] = [
-  {
-    id: "lic-1",
-    software: "Windows Server 2022 Datacenter Edition",
-    fabricante: "Microsoft",
-    quantidade: 4,
-    quantidadeEmUso: 4,
-    vigenciaFim: "2027-12-31",
-    chaveLicenca: "WNSVR-XXXXX-YYYYY-ZZZZZ",
-  },
-  {
-    id: "lic-2",
-    software: "Bitdefender GravityZone Security Endpoint (Antivírus Saúde)",
-    fabricante: "Bitdefender",
-    quantidade: 350,
-    quantidadeEmUso: 312,
-    vigenciaFim: "2026-03-30",
-  },
-];
-
-const INITIAL_JUDICIAL: DemandaJudicial[] = [
-  {
-    id: "jud-1",
-    numeroProcessoJudicial: "5001245-88.2025.8.13.0024",
-    varaJuizo: "1ª Vara da Fazenda Pública Municipal",
-    poloAtivo: "Maria Aparecida dos Santos (Representada pela Defensoria Pública)",
-    tipoDemanda: "MEDICAMENTO",
-    dataIntimacao: "2025-10-07T11:00:00Z",
-    prazoCumprimento: "2025-10-09T18:00:00Z", // Faltam ~24h a 48h! Urgente!
-    status: "EM_ANALISE",
-    prioridade: "URGÊNCIA MÁXIMA / LIMINAR FATA",
-    valorEstimado: 48500,
-    relatoCaso: "Liminar deferida determinando fornecimento imediato em 48 horas de Trastuzumabe Entansina (Kadcyla 100mg) para paciente com Carcinoma de Mama metastático HER2+. Sob pena de bloqueio judicial das contas da Secretaria de Saúde e multa diária de R$ 5.000,00.",
-    vinculosExecucao: [
-      {
-        id: "vinc-1",
-        demandaId: "jud-1",
-        contratoId: "ct-4",
-        contratoNumero: "CT-2025/078",
-        fornecedorId: "forn-2",
-        fornecedorNome: "Hospitalar Farma Minas",
-        dataVinculacao: "2025-10-07T16:00:00Z",
-        valorEmpenhadoJudicial: 48500,
-        statusCumprimento: "Em Cotação Emergencial com a Distribuidora Contratada",
-      },
-    ],
-  },
-  {
-    id: "jud-2",
-    numeroProcessoJudicial: "5003412-12.2025.8.13.0024",
-    varaJuizo: "Vara da Infância e da Juventude",
-    poloAtivo: "L. M. S. (Menor, representado por sua genitora Joana Silva)",
-    tipoDemanda: "LEITO_UTI",
-    dataIntimacao: "2025-10-08T08:00:00Z",
-    prazoCumprimento: "2025-10-08T18:00:00Z", // Faltam 3 horas! Contagem regressiva fatal!
-    status: "EM_ANALISE",
-    prioridade: "PRAZO FATAL: 6 HORAS",
-    valorEstimado: 25000,
-    relatoCaso: "Determinação de transferência imediata com ambulância UTI Pediátrica Tipo D para leito de terapia intensiva neonatal em hospital credenciado SUS ou rede particular.",
-    vinculosExecucao: [
-      {
-        id: "vinc-2",
-        demandaId: "jud-2",
-        contratoId: "ct-2",
-        contratoNumero: "CT-2025/034",
-        fornecedorId: "forn-4",
-        fornecedorNome: "AutoLoc Resgate",
-        dataVinculacao: "2025-10-08T09:30:00Z",
-        valorEmpenhadoJudicial: 25000,
-        statusCumprimento: "Viatura USA-01 Acionada para Transferência com Equipe Pediátrica",
-      },
-    ],
-  },
-  {
-    id: "jud-3",
-    numeroProcessoJudicial: "5004190-67.2025.8.13.0024",
-    varaJuizo: "2ª Vara da Fazenda Pública Municipal",
-    poloAtivo: "Benedito de Oliveira",
-    tipoDemanda: "INSUMO",
-    dataIntimacao: "2025-10-02T14:00:00Z",
-    prazoCumprimento: "2025-10-15T18:00:00Z",
-    status: "CUMPRIDA",
-    prioridade: "Média",
-    valorEstimado: 12800,
-    relatoCaso: "Fornecimento de Concentrador de Oxigênio Domiciliar 5L/min e cilindro de reserva para paciente portador de DPOC grave com hipoxemia.",
-    vinculosExecucao: [
-      {
-        id: "vinc-3",
-        demandaId: "jud-3",
-        contratoId: "ct-4",
-        fornecedorId: "forn-5",
-        fornecedorNome: "White Martins Oxigênio Hospitalar",
-        dataVinculacao: "2025-10-03T10:00:00Z",
-        valorEmpenhadoJudicial: 12800,
-        statusCumprimento: "Entregue e Instalado na Residência do Paciente",
-      },
-    ],
-  },
-];
-
-// -------------------------------------------------------------
-// MODELOS DE DOCUMENTOS E OFÍCIOS PREVIAMENTE ELABORADOS NA PLATAFORMA
-// -------------------------------------------------------------
-
-const INITIAL_DOCUMENTOS_ELABORADOS: DocumentoElaborado[] = [
-  {
-    id: "doc-oficio-018",
-    modeloId: "mod-79",
-    titulo: "OFÍCIO Nº 018/2025 - SMS/SG - Solicitação de Reserva Orçamentária",
-    tipoPeca: "Ofício",
-    modalidade: "OFÍCIOS E MEMORANDOS",
-    artigoLei: "Art. 72 (Lei 14.133/2021) e LRF",
-    numeroProcesso: "PA-2025/00294",
-    numeroCapa: "CP-031/25",
-    dataDocumento: "2025-02-14",
-    cidadeDataExtenso: "Arapiraca/AL, 14 de fevereiro de 2025",
-    orgaoRequisitante: "Superintendência de Gestão (SG) - Secretaria Municipal de Saúde",
-    servidorResponsavel: "Dr. Carlos Eduardo Menezes",
-    matriculaServidor: "143660",
-    cargoServidor: "Superintendente de Gestão (SG)",
-    objeto: "Solicitação de Reserva Orçamentária para Aquisição Contínua de Insumos Hospitalares e Medicamentos da Farmácia Básica",
-    justificativa: "A presente solicitação fundamenta-se na Lei Federal nº 14.133/2021 e na LRF, sendo indispensável para assegurar o fornecimento contínuo de materiais da rede municipal de saúde de Arapiraca.",
-    itens: [
-      { item: 1, descricao: "Insulina Glargina 100UI/ml Caneta Aplicadora", unidade: "UNID", quantidade: 1200, valorUnitario: 68.50, valorTotal: 82200.00 },
-      { item: 2, descricao: "Amoxicilina + Clavulanato 500mg/125mg Comprimido", unidade: "CX", quantidade: 850, valorUnitario: 42.00, valorTotal: 35700.00 }
-    ],
-    secoes: [
-      {
-        id: "sec-destinatario",
-        titulo: "Destinatário Oficial",
-        conteudo: "Ao Excelentíssimo Senhor\nSecretário Municipal da Fazenda e Planejamento\nPrefeitura Municipal de Arapiraca / AL",
-        obrigatoria: true,
-      },
-      {
-        id: "sec-assunto",
-        titulo: "Assunto",
-        conteudo: "Assunto: Solicitação de Bloqueio e Reserva Orçamentária para Medicamentos - PA nº 2025/00294",
-        obrigatoria: true,
-      },
-      {
-        id: "sec-texto",
-        titulo: "Texto Oficial / Solicitação",
-        conteudo: "Cumprimentando-o cordialmente, servimo-nos do presente para solicitar a Vossa Excelência a emissão da competente Reserva Orçamentária no valor de R$ 117.900,00, vinculada à Dotação da Saúde Básica, para instrução do processo licitatório.",
-        obrigatoria: true,
-      }
-    ],
-    status: "CONCLUIDO",
-    downloadUrlOriginal: "/modelos/01 Modelos de Atos Administrativos/OFÍCIOS E MEMORANDOS/OFÍCIO SOLICITAÇÃO DE RESERVA.docx",
-    createdAt: "2025-02-14T10:00:00.000Z",
-    updatedAt: "2025-02-14T10:30:00.000Z",
-  },
-  {
-    id: "doc-oficio-024",
-    modeloId: "mod-77",
-    titulo: "OFÍCIO Nº 024/2025 - SMS/SG - Solicitação de Empenho",
-    tipoPeca: "Ofício",
-    modalidade: "OFÍCIOS E MEMORANDOS",
-    artigoLei: "Art. 95 (Lei 14.133/2021) e Lei 4.320/1964",
-    numeroProcesso: "PA-2025/00108",
-    numeroCapa: "CP-012/25",
-    dataDocumento: "2025-02-10",
-    cidadeDataExtenso: "Arapiraca/AL, 10 de fevereiro de 2025",
-    orgaoRequisitante: "Superintendência de Gestão (SG) - Coordenação de Frotas",
-    servidorResponsavel: "Dr. Carlos Eduardo Menezes",
-    matriculaServidor: "143660",
-    cargoServidor: "Superintendente de Gestão (SG)",
-    objeto: "Solicitação de Nota de Empenho para Manutenção Preventiva e Corretiva da Frota de Ambulâncias do SAMU Arapiraca",
-    justificativa: "Garantir a operacionalidade das ambulâncias em plantão 24 horas.",
-    itens: [
-      { item: 1, descricao: "Revisão Geral e Troca de Pastilhas e Filtros - Ambulância SAMU USA-02", unidade: "SERV", quantidade: 1, valorUnitario: 4850.00, valorTotal: 4850.00 }
-    ],
-    secoes: [
-      {
-        id: "sec-destinatario",
-        titulo: "Destinatário Oficial",
-        conteudo: "À Diretoria de Contabilidade e Finanças\nSecretaria Municipal de Saúde - SMS Arapiraca",
-        obrigatoria: true,
-      },
-      {
-        id: "sec-assunto",
-        titulo: "Assunto",
-        conteudo: "Assunto: Emissão de Nota de Empenho Ordinário - CT nº 2025/090",
-        obrigatoria: true,
-      },
-      {
-        id: "sec-texto",
-        titulo: "Texto Oficial / Solicitação",
-        conteudo: "Solicitamos a emissão de Nota de Empenho no valor de R$ 4.850,00 em favor da empresa credenciada para manutenção das viaturas de resgate.",
-        obrigatoria: true,
-      }
-    ],
-    status: "ASSINADO",
-    downloadUrlOriginal: "/modelos/01 Modelos de Atos Administrativos/OFÍCIOS E MEMORANDOS/OFÍCIO SOLICITAÇÃO DE EMPENHO.docx",
-    createdAt: "2025-02-10T14:20:00.000Z",
-    updatedAt: "2025-02-10T16:00:00.000Z",
-  },
-  {
-    id: "doc-parecer-001",
-    modeloId: "mod-128",
-    titulo: "PARECER DE ACEITAÇÃO - CT Nº 1133/2025 - Vida Oxigênio",
-    tipoPeca: "Parecer de Aceitação",
-    modalidade: "OFÍCIOS E MEMORANDOS",
-    artigoLei: "Art. 140 (Lei nº 14.133/2021) - Recebimento e Aceite Definitivo",
-    numeroProcesso: "PA-2025/00133",
-    numeroCapa: "CP-015/25",
-    dataDocumento: "2026-08-27",
-    cidadeDataExtenso: "Arapiraca/AL, 27 de agosto de 2026",
-    orgaoRequisitante: "Superintendência de Gestão (SG) - Secretaria Municipal de Saúde",
-    servidorResponsavel: "Eugênio Pereira de Sousa",
-    matriculaServidor: "148920",
-    cargoServidor: "Gestor de Contrato Titular",
-    objeto: "Recebimento e Aceite Definitivo de Fornecimento de Gases Medicinais e Oxigênio Líquido - Nota Fiscal nº 000.001.783 (Contrato Administrativo nº 1133/2025).",
-    justificativa: "Comprovação e ateste definitivo de fornecimento de oxigênio medicinal para a rede de saúde em conformidade com o Art. 140 da Lei nº 14.133/2021.",
-    itens: [
-      {
-        item: 1,
-        descricao: "Oxigênio Medicinal Gasoso e Líquido - Recarga e Fornecimento Contínuo (Nota Fiscal nº 000.001.783)",
-        unidade: "M³",
-        quantidade: 360,
-        valorUnitario: 8.30,
-        valorTotal: 2988.00,
-      }
-    ],
-    secoes: [
-      {
-        id: "sec-contrato",
-        titulo: "1. Dados do Contrato e Contratada",
-        conteudo: "Contrato nº 1133/2025\nVigência do Contrato: A vigência do contrato será de 12 (doze) meses contados da data de assinatura do contrato, podendo ser prorrogado por até 05 (cinco) anos, nos termos do art. 107 da Lei nº 14133/2021.\nData de assinatura: 30 de janeiro de 2025.\nRazão Social da Contratada: Empresa VIDA OXIGÊNIO LTDA\nValor do Pagamento: R$ 2.988,00 (dois mil, novecentos e oitenta e oito reais).",
-        obrigatoria: true,
-      },
-      {
-        id: "sec-declaracao",
-        titulo: "2. Declaração do Gestor e Verificação Técnica",
-        conteudo: "Na qualidade de Gestor do Contrato n° 1133/2025, celebrado entre este município e a Empresa VIDA OXIGÊNIO LTDA, com CNPJ n° 44.735.857/0001-25, sediada na Rua José Adilson da Silva, nº 10, Bairro Domingos Acácio, CEP: 57.500-000, em atendimento a Cláusula Décima Quarta, do Contrato acima referenciado, declaro que os itens especificados na nota fiscal: de Nº 000.001.783, foram efetivamente fornecidos, conferidos e aceitos definitivamente.",
-        obrigatoria: true,
-      },
-      {
-        id: "sec-aprovacao",
-        titulo: "3. Conclusão e Total Aprovação",
-        conteudo: "Os itens foram submetidos a verificação deste Gestor, sendo considerados aceitos por atender aos requisitos da quantidade, qualidade desejada e ainda às especificações estabelecidas, tudo em conformidade com o Contrato em comento, celebrado entre a Município de Arapiraca e a CONTRATADA, reunindo condições de total aprovação.",
-        obrigatoria: true,
-      }
-    ],
-    status: "ASSINADO",
-    downloadUrlOriginal: "/modelos/01 Modelos de Atos Administrativos/OFÍCIOS E MEMORANDOS/PARECER DE ACEITAÇÃO.docx",
-    createdAt: "2026-08-27T10:00:00.000Z",
-    updatedAt: "2026-08-27T11:30:00.000Z",
-  }
-];
-
-// =============================================================
-// DADOS INICIAIS DE SOLICITAÇÕES DE CADASTRO (PARA AUTORIZAÇÃO SG)
-// =============================================================
-export const INITIAL_SOLICITACOES_CADASTRO: SolicitacaoCadastro[] = [
-  {
-    id: "cad-001",
-    email: "juliana.lima@saude.gov.br",
-    nomeCompleto: "Dra. Juliana Ferreira Lima",
-    dataNascimento: "1988-06-14",
-    cpf: "058.491.824-30",
-    whatsapp: "(81) 99876-1234",
-    matricula: "152.890-1",
-    superintendenciaLotacao: "SAS",
-    cargo: "Médica Especialista - Regulação Ambulatorial",
-    dataSolicitacao: "2026-10-18T14:20:00.000Z",
-    status: "PENDENTE_SG",
-  },
-  {
-    id: "cad-002",
-    email: "thiago.cavalcante@saude.gov.br",
-    nomeCompleto: "Thiago Albuquerque Cavalcante",
-    dataNascimento: "1994-11-22",
-    cpf: "072.338.914-55",
-    whatsapp: "(81) 99234-5678",
-    matricula: "153.104-7",
-    superintendenciaLotacao: "SUVIG",
-    cargo: "Fiscal Sanitário e Epidemiológico",
-    dataSolicitacao: "2026-10-19T08:15:00.000Z",
-    status: "PENDENTE_SG",
-  },
-  {
-    id: "cad-003",
-    email: "mariana.albuquerque@saude.gov.br",
-    nomeCompleto: "Enfª. Mariana Albuquerque",
-    dataNascimento: "1985-03-29",
-    cpf: "039.812.504-12",
-    whatsapp: "(81) 98765-4321",
-    matricula: "143.660-2",
-    superintendenciaLotacao: "SAS",
-    cargo: "Coordenadora de Atenção Básica",
-    dataSolicitacao: "2026-10-10T09:30:00.000Z",
-    status: "AUTORIZADO",
-    autorizadoPor: "Dr. Carlos Eduardo Menezes (Superintendente SG)",
-    dataAutorizacao: "2026-10-10T10:45:00.000Z",
-    observacoesSG: "Acesso autorizado com perfil solicitante para demandas da Atenção Primária.",
-    permissoes: [
-      { moduloId: "cadastro", moduloNome: "CADASTRO & Controle de Acessos", visualizar: false, editar: false, nivel: "SEM_ACESSO" },
-      { moduloId: "tramitacao", moduloNome: "Tramitação & Governança", visualizar: true, editar: true, nivel: "VISUALIZACAO_E_EDICAO" },
-      { moduloId: "visao_geral", moduloNome: "Visão Geral 360º", visualizar: true, editar: false, nivel: "VISUALIZACAO" },
-      { moduloId: "solicitacoes", moduloNome: "Solicitações de Demandas Prévias", visualizar: true, editar: true, nivel: "VISUALIZACAO_E_EDICAO" },
-      { moduloId: "processos", moduloNome: "Processos & Licitações", visualizar: true, editar: false, nivel: "VISUALIZACAO" },
-      { moduloId: "contratos", moduloNome: "Contratos & Atas de Registro de Preços", visualizar: true, editar: false, nivel: "VISUALIZACAO" },
-      { moduloId: "frotas", moduloNome: "Frotas & Transportes Sanitários", visualizar: true, editar: false, nivel: "VISUALIZACAO" },
-      { moduloId: "orcamento", moduloNome: "Orçamento & Créditos Adicionais", visualizar: false, editar: false, nivel: "SEM_ACESSO" },
-      { moduloId: "judicializacao", moduloNome: "Judicialização da Saúde", visualizar: false, editar: false, nivel: "SEM_ACESSO" },
-      { moduloId: "ti", moduloNome: "Parque TI & Licenças", visualizar: false, editar: false, nivel: "SEM_ACESSO" },
-    ],
-  },
-  {
-    id: "cad-004",
-    email: "roberto.nogueira@saude.gov.br",
-    nomeCompleto: "Tenente Roberto Nogueira",
-    dataNascimento: "1978-08-10",
-    cpf: "012.983.474-09",
-    whatsapp: "(81) 99654-3210",
-    matricula: "141.055-3",
-    superintendenciaLotacao: "SG",
-    cargo: "Fiscal de Contratos & Atas Titular",
-    dataSolicitacao: "2026-10-05T11:00:00.000Z",
-    status: "AUTORIZADO",
-    autorizadoPor: "Dr. Carlos Eduardo Menezes (Superintendente SG)",
-    dataAutorizacao: "2026-10-05T11:30:00.000Z",
-    observacoesSG: "Fiscal titular de contratos de combustíveis e locação de ambulâncias.",
-    permissoes: [
-      { moduloId: "cadastro", moduloNome: "CADASTRO & Controle de Acessos", visualizar: false, editar: false, nivel: "SEM_ACESSO" },
-      { moduloId: "tramitacao", moduloNome: "Tramitação & Governança", visualizar: true, editar: true, nivel: "VISUALIZACAO_E_EDICAO" },
-      { moduloId: "visao_geral", moduloNome: "Visão Geral 360º", visualizar: true, editar: false, nivel: "VISUALIZACAO" },
-      { moduloId: "solicitacoes", moduloNome: "Solicitações de Demandas Prévias", visualizar: true, editar: false, nivel: "VISUALIZACAO" },
-      { moduloId: "processos", moduloNome: "Processos & Licitações", visualizar: true, editar: false, nivel: "VISUALIZACAO" },
-      { moduloId: "contratos", moduloNome: "Contratos & Atas de Registro de Preços", visualizar: true, editar: true, nivel: "VISUALIZACAO_E_EDICAO" },
-      { moduloId: "frotas", moduloNome: "Frotas & Transportes Sanitários", visualizar: true, editar: true, nivel: "VISUALIZACAO_E_EDICAO" },
-      { moduloId: "orcamento", moduloNome: "Orçamento & Créditos Adicionais", visualizar: true, editar: false, nivel: "VISUALIZACAO" },
-      { moduloId: "judicializacao", moduloNome: "Judicialização da Saúde", visualizar: false, editar: false, nivel: "SEM_ACESSO" },
-      { moduloId: "ti", moduloNome: "Parque TI & Licenças", visualizar: false, editar: false, nivel: "SEM_ACESSO" },
-    ],
-  },
-  {
-    id: "cad-005",
-    email: "marcos.silvestre.externo@gmail.com",
-    nomeCompleto: "Marcos Paulo Silvestre",
-    dataNascimento: "1999-01-15",
-    cpf: "099.112.334-88",
-    whatsapp: "(81) 98111-2233",
-    matricula: "PENDENTE",
-    superintendenciaLotacao: "GABINETE",
-    cargo: "Estagiário Voluntário",
-    dataSolicitacao: "2026-10-12T16:00:00.000Z",
-    status: "REJEITADO",
-    autorizadoPor: "Dr. Carlos Eduardo Menezes (Superintendente SG)",
-    dataAutorizacao: "2026-10-13T09:10:00.000Z",
-    motivoRejeicao: "Matrícula funcional não localizada no quadro oficial da SMS. Necessário comprovar vínculo formal ou portaria.",
-  },
-];
-
-// -------------------------------------------------------------
-// CLASSE SINGLETON COM MECANISMO DE REATIVIDADE
-// -------------------------------------------------------------
-
 class SuperGestaoDataStore {
   private static instance: SuperGestaoDataStore;
 
   public usuarios: Usuario[] = [...INITIAL_USUARIOS];
   public solicitacoesCadastro: SolicitacaoCadastro[] = [...INITIAL_SOLICITACOES_CADASTRO];
+  public emailsEnviados: RegistroEmailEnviado[] = [];
   public fornecedores: Fornecedor[] = [...INITIAL_FORNECEDORES];
   public dotacoes: DotacaoOrcamentaria[] = [...INITIAL_DOTACÕES];
   public creditos: CreditoAdicional[] = [...INITIAL_CREDITOS];
@@ -2212,7 +665,7 @@ class SuperGestaoDataStore {
   // -----------------------------------------------------------
   public enquadrarDemandaSG(dados: {
     demandaId: string;
-    analistaSG: string; // Coordenadora Geral
+    analistaSG: string;
     coordenadoraNome?: string;
     modalidadeDefinidaId: string;
     modalidadeDefinidaNome: string;
@@ -2226,6 +679,14 @@ class SuperGestaoDataStore {
     servidorSGDestinoCargo?: string;
     servidorSGDestinoEmail?: string;
     artefatosDisponibilizados?: string[];
+    permissoesAcesso?: any;
+    modelosDisponibilizadosOriginador?: {
+      id: string;
+      titulo: string;
+      tipoPeca: string;
+      artigoLei?: string;
+      downloadUrl?: string;
+    }[];
   }): { success: boolean; message: string; processoGerado?: ProcessoAdministrativo } {
     const demanda = this.demandasPrevias.find((d) => d.id === dados.demandaId);
     if (!demanda) {
@@ -2234,8 +695,8 @@ class SuperGestaoDataStore {
 
     const agora = new Date().toISOString();
     const nomeCoordenadora = dados.coordenadoraNome || dados.analistaSG;
-    const servidorSGNome = dados.servidorSGDestinoNome || "Mariana Alcantara Rios (Diretora de Compras e Contratos / SG)";
-    const servidorSGId = dados.servidorSGDestinoId || "usr-2";
+    const servidorSGNome = dados.servidorSGDestinoNome || "Dra. Willianne Soares";
+    const servidorSGId = dados.servidorSGDestinoId || "usr-coord-geral";
     const emailDemandante = demanda.responsavelEmail || "servidor.demandante@saude.gov.br";
 
     const artefatosLista = dados.artefatosDisponibilizados && dados.artefatosDisponibilizados.length > 0
@@ -2257,22 +718,21 @@ class SuperGestaoDataStore {
       artigoLeiBase: dados.artigoLeiBase,
       justificativaEnquadramento: dados.justificativaEnquadramento,
       observacoesSG: dados.observacoesSG,
-      // 1. Direcionamento para servidor da SG dar andamento ao processo (com dia e hora)
+      modelosDisponibilizadosOriginador: dados.modelosDisponibilizadosOriginador,
       direcionamentoSG: {
         servidorSGId,
         servidorSGNome,
-        servidorSGCargo: dados.servidorSGDestinoCargo || "Divisão de Contratos e Compras / SG",
-        servidorSGEmail: dados.servidorSGDestinoEmail || "sg.processos@saude.gov.br",
+        servidorSGCargo: dados.servidorSGDestinoCargo || "Superintendência de Gestão (SG)",
+        servidorSGEmail: dados.servidorSGDestinoEmail || "sg@saude.gov.br",
         dataHoraDirecionamento: agora,
         coordenadoraNome: nomeCoordenadora,
         visualizado: false,
       },
-      // 2. Notificação automática por e-mail encaminhada ao servidor que originou a demanda
       notificacoesOriginador: {
         emailEnviado: true,
         dataHoraEmail: agora,
         destinatarioEmail: emailDemandante,
-        mensagemResumo: `Demanda enquadrada em '${dados.modalidadeDefinidaNome}' (${dados.artigoLeiBase}). Artefatos técnicos liberados para elaboração: ${artefatosLista.join(", ")}.`,
+        mensagemResumo: `Demanda enquadrada em '${dados.modalidadeDefinidaNome}' (${dados.artigoLeiBase}). Modelos liberados para elaboração: ${artefatosLista.join(", ")}.`,
         artefatosDisponibilizados: artefatosLista,
       },
     };
@@ -2303,42 +763,37 @@ class SuperGestaoDataStore {
       }
     }
 
-    // Histórico: 1. Devolução com enquadramento e disparo automático de e-mail institucional
     demanda.historicoTramitacao.push({
       id: `hist-${Date.now()}-1`,
       data: agora,
       origem: "Coordenação Geral (SG)",
       destino: `${demanda.superintendenciaOrigem} - ${demanda.coordenacaoOrigem} (${demanda.responsavelNome})`,
       acao: "Enquadramento Licitatório & Devolução com Liberação de Artefatos",
-      motivoOuDespacho: `Modalidade definida: ${dados.modalidadeDefinidaNome} (${dados.artigoLeiBase}). Artefatos liberados para elaboração: ${artefatosLista.join(", ")}. Notificação automática enviada via E-mail institucional (${emailDemandante}) ao servidor que originou a demanda.${
+      motivoOuDespacho: `Modalidade definida: ${dados.modalidadeDefinidaNome} (${dados.artigoLeiBase}). Artefatos liberados: ${artefatosLista.join(", ")}. Notificação automática enviada via E-mail institucional (${emailDemandante}).${
         processoGerado ? ` Processo autuado: ${processoGerado.numeroProcesso}.` : ""
       }`,
       usuario: nomeCoordenadora,
     });
 
-    // Histórico: 2. Direcionamento simultâneo para o servidor da SG com data e hora
     demanda.historicoTramitacao.push({
       id: `hist-${Date.now()}-2`,
       data: agora,
       origem: "Coordenação Geral (SG)",
       destino: `SG - ${servidorSGNome}`,
       acao: "Direcionamento de Demanda para Servidor da SG",
-      motivoOuDespacho: `A Coordenadora Geral direcionou a demanda para ${servidorSGNome} dar andamento ao processo na SG. Direcionamento registrado às ${new Date(agora).toLocaleTimeString("pt-BR")}. Aguardando visualização do servidor designado.`,
+      motivoOuDespacho: `A Coordenadora Geral direcionou a demanda para ${servidorSGNome} conduzir o processo na SG. Direcionamento registrado às ${new Date(agora).toLocaleTimeString("pt-BR")}.`,
       usuario: nomeCoordenadora,
     });
 
     return {
       success: true,
-      message: `Enquadramento concluído pela Coordenadora Geral! Notificação oficial enviada para o e-mail (${emailDemandante}) do demandante com artefatos liberados. Demanda direcionada para ${servidorSGNome} com dia e hora registrados.${
+      message: `Enquadramento concluído pela Coordenadora Geral! Notificação oficial enviada para o e-mail (${emailDemandante}). Demanda direcionada para ${servidorSGNome} com dia e hora registrados.${
         processoGerado ? ` Processo ${processoGerado.numeroProcesso} autuado.` : ""
       }`,
       processoGerado,
     };
   }
 
-  // -----------------------------------------------------------
-  // 2.2.1 REGISTRO DE CIÊNCIA / VISUALIZAÇÃO DO SERVIDOR DA SG
-  // -----------------------------------------------------------
   public registrarVisualizacaoDirecionamentoSG(
     demandaId: string,
     servidorNome?: string
@@ -3191,20 +1646,29 @@ class SuperGestaoDataStore {
       return this.solicitacoesCadastro;
     }
     try {
+      // RESET COMPLETO SOLICITADO: Limpeza total de cadastros testes remanescentes
+      const RESET_FLAG = "supergestao_reset_cadastros_20261022_v2";
+      if (!localStorage.getItem(RESET_FLAG)) {
+        localStorage.setItem(RESET_FLAG, "true");
+        localStorage.removeItem("supergestao_solicitacoes_cadastro");
+        this.solicitacoesCadastro = [];
+        this.usuarios = [...INITIAL_USUARIOS];
+        this.salvarSolicitacoesStorage();
+        return [];
+      }
+
       const data = localStorage.getItem("supergestao_solicitacoes_cadastro");
       if (data) {
         const parsed = JSON.parse(data) as SolicitacaoCadastro[];
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const mapa = new Map<string, SolicitacaoCadastro>();
-          // Itens salvos primeiro
-          parsed.forEach((item) => mapa.set(item.id, item));
-          // Mescla com iniciais caso algum falte
-          this.solicitacoesCadastro.forEach((item) => {
-            if (!mapa.has(item.id)) {
-              mapa.set(item.id, item);
-            }
-          });
-          this.solicitacoesCadastro = Array.from(mapa.values());
+        if (Array.isArray(parsed)) {
+          // Purga automática de modelos antigos
+          const validas = parsed.filter(
+            (item) => !item.id.startsWith("cad-00") && !item.id.startsWith("cad-mock")
+          );
+          this.solicitacoesCadastro = validas;
+          if (validas.length !== parsed.length) {
+            this.salvarSolicitacoesStorage();
+          }
         }
       } else {
         this.salvarSolicitacoesStorage();
@@ -3213,6 +1677,19 @@ class SuperGestaoDataStore {
       // fallback gracioso em ambientes com restrição de cookies/storage
     }
     return this.solicitacoesCadastro;
+  }
+
+  public zerarSolicitacoesCadastro(): void {
+    this.solicitacoesCadastro = [];
+    this.usuarios = [...INITIAL_USUARIOS];
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem("supergestao_solicitacoes_cadastro");
+        localStorage.setItem("supergestao_reset_cadastros_20261022_v2", "true");
+        window.dispatchEvent(new CustomEvent("supergestao_cadastro_atualizado"));
+      } catch {}
+    }
+    this.salvarSolicitacoesStorage();
   }
 
   public salvarSolicitacoesStorage(): void {
@@ -3278,14 +1755,20 @@ class SuperGestaoDataStore {
     this.carregarSolicitacoesStorage();
     const cad = this.solicitacoesCadastro.find((c) => c.id === id);
     if (!cad) return false;
+    // Garante que o módulo de CADASTRO NUNCA seja liberado para novos servidores
+    const permissoesSaneadas = (permissoes || []).map((p) =>
+      p.moduloId === "cadastro" ? { ...p, visualizar: false, editar: false } : p
+    );
+
     cad.status = "AUTORIZADO";
-    cad.permissoes = permissoes;
+    cad.permissoes = permissoesSaneadas;
     cad.autorizadoPor = autorizadorNome;
     cad.dataAutorizacao = new Date().toISOString();
     if (observacoesSG) cad.observacoesSG = observacoesSG;
 
     // Converte automaticamente para usuário ativo do sistema
-    // Servidores que não são da SG recebem perfil SERVIDOR_SETORIAL restrito à sua superintendência
+    // Servidores da SG recebem perfil SERVIDOR_SG (a Coordenadora Geral Dra. Willianne Soares é a única ADMINISTRADOR)
+    // Servidores setoriais recebem perfil SERVIDOR_SETORIAL restrito à sua superintendência
     const isSG = cad.superintendenciaLotacao === "SG" || cad.cargo.toLowerCase().includes("gestão");
     this.adicionarUsuario({
       id: `usr-${cad.id}`,
@@ -3294,11 +1777,11 @@ class SuperGestaoDataStore {
       cpf: cad.cpf,
       matricula: cad.matricula,
       cargo: cad.cargo,
-      setor: cad.superintendenciaLotacao, // e.g. "SAS"
-      perfil: isSG ? "ADMINISTRADOR" : "SERVIDOR_SETORIAL",
+      setor: cad.superintendenciaLotacao, // e.g. "SG" ou "SAS"
+      perfil: isSG ? "SERVIDOR_SG" : "SERVIDOR_SETORIAL",
       ativo: true,
       whatsapp: cad.whatsapp,
-      permissoes: cad.permissoes,
+      permissoes: permissoesSaneadas,
       senha: cad.senha,
     });
 
@@ -3326,7 +1809,11 @@ class SuperGestaoDataStore {
     this.carregarSolicitacoesStorage();
     const idx = this.solicitacoesCadastro.findIndex((c) => c.id === id);
     if (idx >= 0) {
+      const emailAlvo = this.solicitacoesCadastro[idx].email?.toLowerCase();
       this.solicitacoesCadastro.splice(idx, 1);
+      this.usuarios = this.usuarios.filter(
+        (u) => u.id !== `usr-${id}` && (emailAlvo ? u.email.toLowerCase() !== emailAlvo : true)
+      );
       this.salvarSolicitacoesStorage();
       return true;
     }
@@ -3343,11 +1830,19 @@ class SuperGestaoDataStore {
   }
 
   public adicionarUsuario(usuario: Usuario): void {
+    // Apenas Dra. Willianne Soares pode ser ADMINISTRADOR oficial
+    if (usuario.email.toLowerCase() !== "will2026@gmail.com" && usuario.id !== "usr-coord-geral") {
+      if (usuario.perfil === "ADMINISTRADOR") {
+        usuario.perfil = usuario.setor === "SG" ? "SERVIDOR_SG" : "SERVIDOR_SETORIAL";
+      }
+    }
     const existe = this.usuarios.find(
       (u) => u.email.toLowerCase() === usuario.email.toLowerCase()
     );
     if (!existe) {
       this.usuarios.push(usuario);
+    } else {
+      Object.assign(existe, usuario);
     }
   }
 
@@ -3423,6 +1918,9 @@ class SuperGestaoDataStore {
       }
 
       const isSG = sol.superintendenciaLotacao === "SG" || sol.cargo.toLowerCase().includes("gestão");
+      const permissoesSaneadas = (sol.permissoes || []).map((p) =>
+        p.moduloId === "cadastro" ? { ...p, visualizar: false, editar: false } : p
+      );
       const usuarioAuth: Usuario = {
         id: `usr-${sol.id}`,
         nome: sol.nomeCompleto,
@@ -3430,11 +1928,11 @@ class SuperGestaoDataStore {
         cpf: sol.cpf,
         matricula: sol.matricula,
         cargo: sol.cargo,
-        setor: sol.superintendenciaLotacao, // e.g. "SAS"
-        perfil: isSG ? "ADMINISTRADOR" : "SERVIDOR_SETORIAL",
+        setor: sol.superintendenciaLotacao, // e.g. "SG" ou "SAS"
+        perfil: isSG ? "SERVIDOR_SG" : "SERVIDOR_SETORIAL",
         ativo: true,
         whatsapp: sol.whatsapp,
-        permissoes: sol.permissoes,
+        permissoes: permissoesSaneadas,
         senha: sol.senha,
       };
 
@@ -3471,6 +1969,182 @@ class SuperGestaoDataStore {
       success: false,
       message: "Usuário não localizado no sistema. Cadastre-se na aba 'Cadastrar Servidor' para solicitar autorização à SG.",
     };
+  }
+
+  // -------------------------------------------------------------
+  // DIRECIONAMENTO E GOVERNANÇA DE DEMANDAS NA SG
+  // -------------------------------------------------------------
+  public direcionarDemandaSG(dados: {
+    demandaId: string;
+    coordenadoraNome?: string;
+    servidorSGDestinoId: string;
+    servidorSGDestinoNome: string;
+    servidorSGDestinoCargo?: string;
+    servidorSGDestinoEmail?: string;
+    observacoes?: string;
+    permissoesAcesso?: any;
+    artefatosDisponibilizados?: string[];
+  }): { success: boolean; message: string; demanda?: DemandaPreviaProcesso } {
+    const demanda = this.demandasPrevias.find((d) => d.id === dados.demandaId);
+    if (!demanda) {
+      return { success: false, message: "Demanda não localizada." };
+    }
+
+    const agora = new Date().toISOString();
+    const nomeCoordenadora = dados.coordenadoraNome || "Dra. Willianne Soares (Coordenadora Geral de Gestão / SG)";
+    const servidorSGNome = dados.servidorSGDestinoNome || "Dra. Willianne Soares";
+    const servidorSGEmail = dados.servidorSGDestinoEmail || "will2026@gmail.com";
+
+    if (demanda.status === "AGUARDANDO_ENQUADRAMENTO_SG") {
+      demanda.status = "EM_ANALISE_SG";
+    }
+
+    if (!demanda.enquadramentoSG) {
+      demanda.enquadramentoSG = {
+        dataDespacho: agora,
+        analistaSG: nomeCoordenadora,
+        coordenadoraNome: nomeCoordenadora,
+        modalidadeDefinidaId: "A_DEFINIR",
+        modalidadeDefinidaNome: "Em Análise pela SG",
+        artigoLeiBase: "Lei Federal nº 14.133/2021",
+        justificativaEnquadramento: dados.observacoes || "Demanda direcionada pela Coordenadora Geral para instrução técnica e condução na SG.",
+      };
+    }
+
+    demanda.enquadramentoSG.direcionamentoSG = {
+      servidorSGId: dados.servidorSGDestinoId,
+      servidorSGNome,
+      servidorSGCargo: dados.servidorSGDestinoCargo || "Superintendência de Gestão (SG)",
+      servidorSGEmail,
+      dataHoraDirecionamento: agora,
+      coordenadoraNome: nomeCoordenadora,
+      visualizado: false,
+    };
+
+    if (dados.permissoesAcesso) {
+      demanda.enquadramentoSG.permissoesAcesso = dados.permissoesAcesso;
+    }
+
+    demanda.historicoTramitacao.push({
+      id: `hist-${Date.now()}`,
+      data: agora,
+      origem: "Coordenação Geral de Gestão (SG)",
+      destino: `SG - ${servidorSGNome}`,
+      acao: "Direcionamento Interno de Demanda na SG",
+      motivoOuDespacho: dados.observacoes || `Demanda direcionada formalmente para condução e instrução processual por ${servidorSGNome}.`,
+      usuario: nomeCoordenadora,
+    });
+
+    return {
+      success: true,
+      message: `Demanda direcionada com sucesso para ${servidorSGNome} (${servidorSGEmail})!`,
+      demanda,
+    };
+  }
+
+  public concluirElaboracaoDocumentosOriginador(dados: {
+    demandaId: string;
+    servidorNome: string;
+    servidorEmail?: string;
+    observacoes?: string;
+    documentosProntos?: string[];
+  }): { success: boolean; message: string; demanda?: DemandaPreviaProcesso } {
+    const demanda = this.demandasPrevias.find((d) => d.id === dados.demandaId);
+    if (!demanda) {
+      return { success: false, message: "Demanda não localizada." };
+    }
+
+    const agora = new Date().toISOString();
+    const servidorDesignadoNome = demanda.enquadramentoSG?.direcionamentoSG?.servidorSGNome || "Equipe da SG";
+
+    demanda.status = "DOCUMENTOS_PRONTOS_SG";
+
+    if (!demanda.enquadramentoSG) {
+      demanda.enquadramentoSG = {
+        dataDespacho: agora,
+        analistaSG: "Coordenadora Geral da SG",
+        modalidadeDefinidaId: "A_DEFINIR",
+        modalidadeDefinidaNome: "Em Análise pela SG",
+        artigoLeiBase: "Lei nº 14.133/2021",
+        justificativaEnquadramento: "Elaboração de documentos concluída pelo originador.",
+      };
+    }
+
+    demanda.enquadramentoSG.elaboracaoOriginadorConcluida = {
+      concluido: true,
+      dataHoraConclusao: agora,
+      servidorNome: dados.servidorNome,
+      observacoes: dados.observacoes,
+      documentosProntos: dados.documentosProntos || [],
+    };
+
+    demanda.historicoTramitacao.push({
+      id: `hist-conc-${Date.now()}`,
+      data: agora,
+      origem: `${demanda.superintendenciaOrigem} - ${demanda.responsavelNome}`,
+      destino: `SG - ${servidorDesignadoNome}`,
+      acao: "Devolução da Demanda à SG com Documentos Prontos",
+      motivoOuDespacho: dados.observacoes || "O servidor originador concluiu a elaboração técnica de todos os artefatos liberados pela SG.",
+      usuario: dados.servidorNome,
+    });
+
+    return {
+      success: true,
+      message: `Documentos concluídos com sucesso e demanda devolvida para a caixa da SG (${servidorDesignadoNome})!`,
+      demanda,
+    };
+  }
+
+  // -------------------------------------------------------------
+  // CENTRAL DE AUDITORIA & REGISTRO DE E-MAILS DISPARADOS
+  // -------------------------------------------------------------
+  public carregarEmailsStorage(): RegistroEmailEnviado[] {
+    if (typeof window === "undefined") {
+      return this.emailsEnviados;
+    }
+    try {
+      const data = localStorage.getItem("supergestao_emails_enviados");
+      if (data) {
+        const parsed = JSON.parse(data) as RegistroEmailEnviado[];
+        if (Array.isArray(parsed)) {
+          this.emailsEnviados = parsed;
+        }
+      }
+    } catch {
+      // Ignora erro de storage restrito
+    }
+    return this.emailsEnviados;
+  }
+
+  public salvarEmailsStorage(): void {
+    if (typeof window === "undefined") return;
+    try {
+      localStorage.setItem(
+        "supergestao_emails_enviados",
+        JSON.stringify(this.emailsEnviados)
+      );
+      window.dispatchEvent(new CustomEvent("supergestao_emails_atualizados"));
+    } catch {
+      // Ignora falha de cota
+    }
+  }
+
+  public registrarEmailEnviado(registro: RegistroEmailEnviado): void {
+    this.carregarEmailsStorage();
+    this.emailsEnviados.unshift(registro);
+    if (this.emailsEnviados.length > 100) {
+      this.emailsEnviados = this.emailsEnviados.slice(0, 100);
+    }
+    this.salvarEmailsStorage();
+  }
+
+  public obterEmailsEnviados(): RegistroEmailEnviado[] {
+    return this.carregarEmailsStorage();
+  }
+
+  public limparHistoricoEmails(): void {
+    this.emailsEnviados = [];
+    this.salvarEmailsStorage();
   }
 }
 

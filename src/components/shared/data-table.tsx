@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -76,11 +76,52 @@ export function DataTable<T extends Record<string, any>>({
   }, [filteredData, sortKey, sortDirection]);
 
   // Paginação
-  const totalPages = Math.ceil(sortedData.length / itemsPerPage) || 1;
+  const [pageSize, setPageSize] = useState(itemsPerPage);
+  const totalPages = Math.ceil(sortedData.length / pageSize) || 1;
+
+  // Ajusta a página atual caso os filtros ou total de páginas mudem
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(Math.max(1, totalPages));
+    }
+  }, [totalPages, currentPage]);
+
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, sortedData.length);
+
   const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return sortedData.slice(start, start + itemsPerPage);
-  }, [sortedData, currentPage, itemsPerPage]);
+    return sortedData.slice(startIndex, endIndex);
+  }, [sortedData, startIndex, endIndex]);
+
+  const handlePageChange = (newPage: number) => {
+    const page = Math.max(1, Math.min(totalPages, newPage));
+    setCurrentPage(page);
+  };
+
+  const getPageNumbers = () => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    const pages: (number | string)[] = [];
+    if (currentPage <= 4) {
+      for (let i = 1; i <= 5; i++) pages.push(i);
+      pages.push("...");
+      pages.push(totalPages);
+    } else if (currentPage >= totalPages - 3) {
+      pages.push(1);
+      pages.push("...");
+      for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      pages.push("...");
+      pages.push(currentPage - 1);
+      pages.push(currentPage);
+      pages.push(currentPage + 1);
+      pages.push("...");
+      pages.push(totalPages);
+    }
+    return pages;
+  };
 
   const handleSort = (key: keyof T) => {
     if (sortKey === key) {
@@ -148,7 +189,7 @@ export function DataTable<T extends Record<string, any>>({
 
           <button
             onClick={exportCSV}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium transition-colors shadow-2xs shrink-0"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium transition-colors shadow-2xs shrink-0 cursor-pointer"
             title="Exportar dados para CSV"
           >
             <Download className="h-3.5 w-3.5 text-slate-500" />
@@ -205,25 +246,95 @@ export function DataTable<T extends Record<string, any>>({
         </table>
       </div>
 
-      {/* Paginação */}
-      <div className="p-3 border-t border-slate-200 bg-slate-50/50 flex items-center justify-between text-xs text-slate-500">
-        <div>
-          Página <strong className="text-slate-800">{currentPage}</strong> de{" "}
-          <strong className="text-slate-800">{totalPages}</strong>
+      {/* Paginação Aconchegante, Clara e 100% Funcional */}
+      <div className="p-3.5 sm:p-4 border-t border-slate-200 bg-slate-50/80 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-slate-600 select-none">
+        {/* Informações de Registros e Itens por Página */}
+        <div className="flex items-center gap-3 flex-wrap justify-center sm:justify-start">
+          <div className="text-slate-600">
+            Mostrando{" "}
+            <strong className="text-slate-800 font-bold">
+              {sortedData.length > 0 ? startIndex + 1 : 0}
+            </strong>{" "}
+            a{" "}
+            <strong className="text-slate-800 font-bold">{endIndex}</strong> de{" "}
+            <strong className="text-slate-800 font-bold">
+              {sortedData.length}
+            </strong>{" "}
+            registros
+          </div>
+
+          <span className="text-slate-300 hidden sm:inline">&bull;</span>
+
+          <div className="flex items-center gap-1.5 text-slate-500">
+            <span>Exibir:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="bg-white border border-slate-200 text-slate-700 text-xs rounded-md px-2 py-1 font-medium focus:outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer shadow-2xs"
+            >
+              {[8, 12, 20, 50].map((sz) => (
+                <option key={sz} value={sz}>
+                  {sz} por pág.
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-        <div className="flex items-center gap-1">
+
+        {/* Controles de Navegação: Anterior, Pílulas Numéricas e Próxima */}
+        <div className="flex items-center gap-1.5 flex-wrap justify-center">
+          {/* Botão Página Anterior */}
           <button
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            type="button"
+            onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="p-1 rounded-md border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-white"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 hover:text-slate-900 font-semibold text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white shadow-2xs transition-all cursor-pointer"
+            title="Ir para a página anterior"
           >
             <ChevronLeft className="h-4 w-4" />
+            <span className="font-medium">Anterior</span>
           </button>
+
+          {/* Pílulas de Números das Páginas */}
+          <div className="flex items-center gap-1">
+            {getPageNumbers().map((page, idx) =>
+              page === "..." ? (
+                <span
+                  key={`ellipsis-${idx}`}
+                  className="px-2 py-1 text-slate-400 font-medium select-none text-[11px]"
+                >
+                  ...
+                </span>
+              ) : (
+                <button
+                  key={`page-btn-${page}`}
+                  type="button"
+                  onClick={() => handlePageChange(Number(page))}
+                  className={`h-7 min-w-[30px] px-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    currentPage === page
+                      ? "bg-sky-700 text-white shadow-xs border border-sky-800"
+                      : "bg-white border border-slate-200 text-slate-700 hover:bg-sky-50 hover:text-sky-800 hover:border-sky-300 shadow-2xs"
+                  }`}
+                  title={`Ir para a página ${page}`}
+                >
+                  {page}
+                </button>
+              )
+            )}
+          </div>
+
+          {/* Botão Próxima Página */}
           <button
-            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            type="button"
+            onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="p-1 rounded-md border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-white"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 hover:text-slate-900 font-semibold text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white shadow-2xs transition-all cursor-pointer"
+            title="Ir para a próxima página"
           >
+            <span className="font-medium">Próxima</span>
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>

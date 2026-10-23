@@ -184,34 +184,28 @@ export function TiaLicitaAssistant() {
     ]);
   };
 
-  // Se estiver fechado, exibe botão flutuante discreto e compacto (oculto na impressão)
+  // Se estiver fechado, exibe botão flutuante discreto e acolhedor (oculto na impressão)
   if (!isOpen) {
     return (
       <div className="fixed bottom-5 right-5 z-[99999] print:hidden flex items-center">
-        {/* Botão de Disparo Discreto e Compacto */}
         <button
           type="button"
           onClick={() => {
             setIsOpen(true);
             setIsMinimized(false);
           }}
-          className="group flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/95 hover:bg-white text-slate-700 hover:text-slate-900 shadow-md hover:shadow-lg border border-slate-200 hover:border-slate-300 transition-all duration-150 cursor-pointer backdrop-blur-xs text-[11px] font-medium"
-          title="Tia Licita! Sua Assistente IA! (Groq AI)"
+          className="group flex items-center gap-2 px-3.5 py-2 rounded-full bg-white/95 hover:bg-white text-slate-700 hover:text-slate-900 shadow-sm hover:shadow-md border border-slate-200/90 hover:border-sky-300 transition-all duration-150 cursor-pointer backdrop-blur-xs text-xs font-medium"
+          title="Assistente Tia Licita (orientações e minutas)"
         >
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-          </span>
+          <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
           
           <span className="tracking-tight text-slate-700 group-hover:text-slate-900">
-            Tia Licita! Sua Assistente IA!
+            Assistente Tia Licita
           </span>
 
-          <div className="h-5 w-5 rounded-full bg-slate-100 group-hover:bg-sky-50 flex items-center justify-center text-sky-700 shrink-0 transition-colors">
+          <div className="h-5 w-5 rounded-full bg-sky-50 flex items-center justify-center text-sky-700 shrink-0">
             <Sparkles className="h-3 w-3 text-sky-600" />
           </div>
-
-          <span className="sr-only">Abrir Tia Licita! Sua Assistente IA!</span>
         </button>
       </div>
     );

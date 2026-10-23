@@ -23,7 +23,7 @@
     --border: 214 32% 91%;
     --input: 214 32% 91%;
     --ring: 216 75% 24%;
-    --radius: 0.5rem;
+    --radius: 0.75rem;
     --chart-1: 216 75% 24%;
     --chart-2: 160 84% 39%;
     --chart-3: 38 92% 50%;
@@ -151,4 +151,22 @@
     color: #000000 !important;
   }
 }
+
+/* ---------------------------------------------------- */
+/* OCULTA O TOAST E OVERLAY DE DESENVOLVIMENTO NEXT.JS  */
+/* ---------------------------------------------------- */
+nextjs-portal,
+#nextjs-portal,
+[data-nextjs-toast],
+[data-nextjs-toast-wrapper],
+[data-nextjs-dialog-overlay] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+}
+
 

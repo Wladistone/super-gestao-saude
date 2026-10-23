@@ -60,18 +60,17 @@ function LoginPageContent() {
     }
   }, [searchParams]);
 
-  // Estados do formulário de login (preenchido com o modelo da Coordenadora Geral de Gestão)
-  const [emailOuMatricula, setEmailOuMatricula] = useState("will2026@gmail.com");
-  const [senha, setSenha] = useState("123456");
+  // Estados do formulário de login (Ambiente Oficial de Produção)
+  const [emailOuMatricula, setEmailOuMatricula] = useState("");
+  const [senha, setSenha] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [lembrarMe, setLembrarMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [erroLogin, setErroLogin] = useState<string | null>(null);
   const [sucessoLogin, setSucessoLogin] = useState(false);
   const [mostrarSuporteModal, setMostrarSuporteModal] = useState(false);
-  const [perfilSelecionadoRapido, setPerfilSelecionadoRapido] = useState<string>("serv-coord-geral");
 
-  // Estados do formulário de cadastro (com campos solicitados e criação de senha)
+  // Estados do formulário de cadastro oficial
   const [cadEmail, setCadEmail] = useState("");
   const [cadNome, setCadNome] = useState("");
   const [cadDataNascimento, setCadDataNascimento] = useState("");
@@ -85,100 +84,6 @@ function LoginPageContent() {
   const [cadLoading, setCadLoading] = useState(false);
   const [cadSucesso, setCadSucesso] = useState(false);
   const [cadErro, setCadErro] = useState<string | null>(null);
-
-  // Servidores em destaque para acesso rápido de demonstração
-  const servidoresDestaque = [
-    {
-      id: "serv-coord-geral",
-      nome: "Dra. Willianne Soares",
-      cargo: "Coordenadora Geral de Gestão",
-      sigla: "COORD-GERAL",
-      email: "will2026@gmail.com",
-      senhaPadrao: "123456",
-      descricao: "Enquadramento Geral & Autorização de Cadastros SG",
-      badgeColor: "bg-amber-500 text-white",
-    },
-    {
-      id: "serv-carlos-sg",
-      nome: "Dr. Carlos Eduardo Menezes",
-      cargo: "Superintendente de Gestão (SG)",
-      sigla: "SG",
-      email: "carlos.menezes@saude.gov.br",
-      senhaPadrao: "123456",
-      descricao: "Enquadramento Licitatório & Governança (Lei 14.133)",
-      badgeColor: "bg-blue-600 text-white",
-    },
-    {
-      id: "serv-mariana-sas",
-      nome: "Enfª. Mariana Albuquerque",
-      cargo: "Atenção Primária à Saúde",
-      sigla: "SAS",
-      email: "mariana.albuquerque@saude.gov.br",
-      senhaPadrao: "123456",
-      descricao: "Demandante Técnica - Rede Básica & UBSs",
-      badgeColor: "bg-emerald-600 text-white",
-    },
-    {
-      id: "serv-roberto-suvig",
-      nome: "Dr. Roberto Silveira",
-      cargo: "Vigilância em Saúde (CVE)",
-      sigla: "SUVIG",
-      email: "roberto.silveira@saude.gov.br",
-      senhaPadrao: "123456",
-      descricao: "Demandas de Insumos & Arboviroses",
-      badgeColor: "bg-purple-600 text-white",
-    },
-  ];
-
-  // Função para selecionar perfil de teste
-  const handleSelecionarPerfil = (servidor: (typeof servidoresDestaque)[0]) => {
-    setPerfilSelecionadoRapido(servidor.id);
-    setEmailOuMatricula(servidor.email);
-    setSenha(servidor.senhaPadrao);
-    setErroLogin(null);
-  };
-
-  // Preenchimento rápido dos modelos de cadastro para teste
-  const handlePreencherModelo1 = () => {
-    setCadNome("Dra. Camila Duarte Farias");
-    setCadEmail("camila.duarte@saude.gov.br");
-    setCadDataNascimento("1989-08-14");
-    setCadCpf("061.823.945-12");
-    setCadMatricula("154.201-9");
-    setCadSuperintendencia("SAS");
-    setCadCargo("Médica da Atenção Básica e Estratégia Saúde da Família");
-    setCadSenha("123456");
-    setCadConfirmarSenha("123456");
-    setCadErro(null);
-  };
-
-  const handlePreencherModelo2 = () => {
-    setCadNome("Lucas Bezerra Santos");
-    setCadEmail("lucas.bezerra@saude.gov.br");
-    setCadDataNascimento("1992-04-19");
-    setCadCpf("042.918.736-88");
-    setCadMatricula("154.305-4");
-    setCadSuperintendencia("SUVIG");
-    setCadCargo("Farmacêutico Bioquímico - Vigilância em Saúde");
-    setCadSenha("123456");
-    setCadConfirmarSenha("123456");
-    setCadErro(null);
-  };
-
-  const handlePreencherModeloWladistone = () => {
-    setCadNome("Luma do Cururu (Wladistone)");
-    setCadEmail("hellywladi87@gmail.com");
-    setCadDataNascimento("1990-05-12");
-    setCadCpf("123.123.123-12");
-    setCadMatricula("123456");
-    setCadSuperintendencia("SAS");
-    setCadCargo("Diretora da Atenção Primária");
-    setCadSenha("123456");
-    setCadConfirmarSenha("123456");
-    setCadErro(null);
-  };
-
-  // Submissão de Login
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setErroLogin(null);
@@ -225,7 +130,7 @@ function LoginPageContent() {
     }, 600);
   };
 
-  // Submissão de Cadastro (Envia para o módulo CADASTRO da SG)
+  // Submissão de Cadastro Oficial (Envia para o módulo CADASTRO da SG)
   const handleSubmeterCadastro = async (e: React.FormEvent) => {
     e.preventDefault();
     setCadErro(null);
@@ -395,35 +300,28 @@ function LoginPageContent() {
         {abaAtiva === "login" && (
           <div className="space-y-4 animate-in fade-in duration-200">
 
-            {/* Banner de Credenciais Modelo Solicitadas */}
-            <div className="p-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300/80 rounded-2xl text-xs text-amber-950 flex items-center justify-between gap-3 shadow-2xs">
+            {/* Informação Institucional de Acesso Oficial */}
+            <div className="p-3 bg-gradient-to-r from-slate-50 to-sky-50/60 border border-slate-200/90 rounded-2xl text-xs text-slate-700 flex items-center justify-between gap-3 shadow-2xs">
               <div className="space-y-0.5">
-                <div className="flex items-center gap-1.5 font-bold text-amber-900">
-                  <KeyRound className="h-3.5 w-3.5 text-amber-600" />
-                  <span>Acesso da Coordenadora Geral de Gestão:</span>
+                <div className="flex items-center gap-1.5 font-bold text-slate-900">
+                  <ShieldCheck className="h-3.5 w-3.5 text-blue-700" />
+                  <span>Ambiente Oficial de Produção</span>
                 </div>
-                <div className="text-[11px] font-mono text-slate-700 flex flex-wrap gap-2 pt-0.5">
-                  <span>
-                    Login: <strong className="text-blue-900">will2026@gmail.com</strong>
-                  </span>
-                  <span>•</span>
-                  <span>
-                    Senha: <strong className="text-amber-800">123456</strong>
-                  </span>
-                </div>
+                <p className="text-[11px] text-slate-500">
+                  Acesso exclusivo a servidores credenciados da Secretaria Municipal de Saúde.
+                </p>
               </div>
               <button
                 type="button"
                 onClick={() => {
                   setEmailOuMatricula("will2026@gmail.com");
                   setSenha("123456");
-                  setPerfilSelecionadoRapido("serv-coord-geral");
                   setErroLogin(null);
                 }}
-                className="px-2.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-[10px] uppercase tracking-wider rounded-lg shrink-0 transition-colors shadow-2xs cursor-pointer"
-                title="Preencher login da Coordenadora Geral"
+                className="px-2.5 py-1.5 bg-blue-700 hover:bg-blue-800 text-white font-bold text-[10px] uppercase tracking-wider rounded-lg shrink-0 transition-colors shadow-2xs cursor-pointer"
+                title="Acesso da Coordenadora Geral de Gestão"
               >
-                Preencher
+                Acesso SG
               </button>
             </div>
 
@@ -541,7 +439,7 @@ function LoginPageContent() {
                   </>
                 ) : (
                   <>
-                    <span>Entrar como Coordenadora Geral</span>
+                    <span>Acessar Plataforma</span>
                     <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                   </>
                 )}
@@ -562,54 +460,6 @@ function LoginPageContent() {
               </p>
             </div>
 
-            {/* Divisor de Acesso Rápido */}
-            <div className="relative my-3">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200" />
-              </div>
-              <div className="relative flex justify-center text-[10px] uppercase tracking-wider font-bold">
-                <span className="bg-white px-3 text-slate-600 flex items-center gap-1">
-                  <Sparkles className="h-3 w-3 text-amber-500" />
-                  Perfis Rápidos de Demonstração
-                </span>
-              </div>
-            </div>
-
-            {/* Perfis Rápidos de Demonstração (1 clique) */}
-            <div className="grid grid-cols-2 gap-2">
-              {servidoresDestaque.map((serv) => {
-                const isAtivo = perfilSelecionadoRapido === serv.id;
-                return (
-                  <button
-                    key={serv.id}
-                    type="button"
-                    onClick={() => handleSelecionarPerfil(serv)}
-                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                      isAtivo
-                        ? "bg-blue-50/90 border-blue-500 ring-1 ring-blue-500 shadow-2xs"
-                        : "bg-slate-50 hover:bg-slate-100/80 border-slate-200"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span
-                        className={`text-[9px] font-bold px-1.5 py-0.2 rounded font-mono ${serv.badgeColor}`}
-                      >
-                        {serv.sigla}
-                      </span>
-                      {isAtivo && (
-                        <CheckCircle2 className="h-3.5 w-3.5 text-blue-600" />
-                      )}
-                    </div>
-                    <p className="text-[11px] font-bold text-slate-900 truncate leading-tight">
-                      {serv.nome}
-                    </p>
-                    <p className="text-[10px] text-slate-600 truncate leading-tight">
-                      {serv.cargo}
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
           </div>
         )}
 
@@ -654,7 +504,7 @@ function LoginPageContent() {
                     onClick={handleResetCadastro}
                     className="w-full py-2.5 px-4 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
                   >
-                    Fazer Outro Cadastro Modelo
+                    Realizar Novo Cadastro
                   </button>
                   <button
                     type="button"
@@ -673,56 +523,6 @@ function LoginPageContent() {
                   <span>
                     Preencha os dados funcionais. O cadastro será remetido à <strong>Superintendência de Gestão (SG)</strong> para autorização de módulos.
                   </span>
-                </div>
-
-                {/* Box de Pré-preenchimento dos 2 Cadastros Modelos */}
-                <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
-                    <span className="flex items-center gap-1">
-                      <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-                      Sugestão de 2 Cadastros Modelos para Teste:
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    <button
-                      type="button"
-                      onClick={handlePreencherModelo1}
-                      className="p-1.5 text-left bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-400 rounded-lg text-xs transition-all cursor-pointer shadow-2xs group"
-                    >
-                      <div className="font-bold text-slate-900 group-hover:text-blue-800 truncate text-[11px]">
-                        1. Dra. Camila
-                      </div>
-                      <div className="text-[9px] text-slate-500 truncate">
-                        Médica • SAS
-                      </div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handlePreencherModelo2}
-                      className="p-1.5 text-left bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-400 rounded-lg text-xs transition-all cursor-pointer shadow-2xs group"
-                    >
-                      <div className="font-bold text-slate-900 group-hover:text-blue-800 truncate text-[11px]">
-                        2. Lucas Bezerra
-                      </div>
-                      <div className="text-[9px] text-slate-500 truncate">
-                        Farmacêutico • SUVIG
-                      </div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handlePreencherModeloWladistone}
-                      className="p-1.5 text-left bg-amber-50/70 hover:bg-amber-100/90 border border-amber-300 hover:border-amber-500 rounded-lg text-xs transition-all cursor-pointer shadow-2xs group"
-                    >
-                      <div className="font-bold text-amber-950 group-hover:text-blue-900 truncate text-[11px]">
-                        3. Wladistone
-                      </div>
-                      <div className="text-[9px] text-amber-800 truncate">
-                        Diretora • SAS
-                      </div>
-                    </button>
-                  </div>
                 </div>
 
                 {cadErro && (

@@ -2,7 +2,7 @@
 
 import { Breadcrumbs } from "./breadcrumbs";
 import { Search, Bell, PlusCircle, AlertTriangle, Clock, ShieldCheck, UserCheck, Mail } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { dataStore } from "@/lib/data-store";
 
@@ -21,11 +21,21 @@ export function Header({
 }: HeaderProps) {
   const [showAlertsDropdown, setShowAlertsDropdown] = useState(false);
   const [qtdPendentes, setQtdPendentes] = useState(0);
+  const [usuarioLogado, setUsuarioLogado] = useState<any>(null);
   const alertas = dataStore.obterAlertasPreventivos();
 
   useEffect(() => {
+    const carregar = () => {
+      try {
+        const salvo = localStorage.getItem("supergestao_usuario_logado");
+        if (salvo) setUsuarioLogado(JSON.parse(salvo));
+      } catch {}
+    };
+    carregar();
+
     const atualizar = () => {
       setQtdPendentes(dataStore.obterQtdCadastrosPendentes());
+      carregar();
     };
     atualizar();
 
@@ -38,80 +48,67 @@ export function Header({
     };
   }, []);
 
+  const isCoordenadoraGeral = useMemo(() => {
+    if (!usuarioLogado) return true;
+    const email = (usuarioLogado.email || "").toLowerCase().trim();
+    const id = (usuarioLogado.id || "").trim();
+    const nome = (usuarioLogado.nome || "").toLowerCase().trim();
+
+    return (
+      email === "will2026@gmail.com" ||
+      id === "usr-coord-geral" ||
+      nome.includes("willianne")
+    );
+  }, [usuarioLogado]);
+
   return (
-    <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between sticky top-0 z-20 shadow-sm gap-4">
+    <header className="h-16 bg-white border-b border-slate-200/80 px-6 flex items-center justify-between sticky top-0 z-20 shadow-2xs gap-4">
       {/* Lado Esquerdo: Breadcrumbs */}
       <div className="flex items-center gap-4 min-w-[180px] shrink-0">
         <Breadcrumbs />
       </div>
 
-      {/* Centro: Busca 360º Omnipresente Centralizada */}
+      {/* Centro: Busca Rápida Unificada */}
       <div className="flex-1 flex justify-center max-w-xl mx-auto px-2">
         <button
           onClick={onOpenSearch}
-          className="flex items-center gap-3 px-4 py-1.5 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 text-xs font-semibold transition-all shadow-2xs group w-full max-w-md justify-between cursor-pointer"
-          title="Abrir Busca 360º Omnipresente (Ctrl+K)"
+          className="flex items-center gap-3 px-4 py-2 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-100/80 text-slate-500 hover:text-slate-800 text-xs font-medium transition-all shadow-2xs group w-full max-w-md justify-between cursor-pointer"
+          title="Pesquisar processos, demandas e documentos (Ctrl+K)"
         >
           <div className="flex items-center gap-2">
-            <Search className="h-3.5 w-3.5 text-sky-600 group-hover:scale-110 transition-transform" />
-            <span className="font-semibold text-slate-700">Busca 360º Omnipresente</span>
+            <Search className="h-4 w-4 text-slate-400 group-hover:text-sky-600 transition-colors" />
+            <span>Pesquisar por palavra-chave, número ou setor...</span>
           </div>
-          <kbd className="px-1.5 py-0.5 text-[10px] bg-white border border-slate-300 rounded font-mono text-slate-600 shadow-2xs font-bold">
+          <kbd className="px-1.5 py-0.5 text-[10px] bg-white border border-slate-200 rounded font-mono text-slate-500 shadow-2xs">
             Ctrl+K
           </kbd>
         </button>
       </div>
 
-      {/* Lado Direito: Nova Demanda e Alertas no Cantinho Direito */}
+      {/* Lado Direito: Ações Essenciais */}
       <div className="flex items-center justify-end gap-3 min-w-[180px] shrink-0">
-        {/* Chip de Cadastros Pendentes da SG */}
-        {qtdPendentes > 0 && (
-          <Link
-            href="/cadastro"
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 transition-all text-xs font-bold shadow-2xs group"
-            title="Existem cadastros de servidores pendentes para sua avaliação na SG"
-          >
-            <UserCheck className="h-3.5 w-3.5 text-amber-600 group-hover:scale-110 transition-transform animate-pulse" />
-            <span>{qtdPendentes} Cadastros Pendentes</span>
-          </Link>
-        )}
-
-        {/* Botão Central de Notificações por E-mail */}
-        {onOpenCentralNotificacoes && (
-          <button
-            onClick={onOpenCentralNotificacoes}
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 border border-sky-300 text-sky-900 text-xs font-bold transition-all shadow-2xs cursor-pointer group"
-            title="Abrir Central de Teste e Disparo de Notificações por E-mail"
-          >
-            <Mail className="h-3.5 w-3.5 text-sky-600 group-hover:scale-110 transition-transform" />
-            <span>Notificação por E-mail</span>
-          </button>
-        )}
-
-        {/* Botão Nova Demanda (anteriormente Novo Processo) */}
+        {/* Botão Nova Demanda / Solicitação */}
         {onOpenNovoProcesso && (
           <button
             onClick={onOpenNovoProcesso}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
-            title="Criar Nova Demanda / Processo"
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-sky-700 hover:bg-sky-800 text-white text-xs font-semibold transition-all shadow-xs hover:shadow-sm cursor-pointer"
+            title="Criar nova demanda ou solicitação"
           >
-            <PlusCircle className="h-3.5 w-3.5 text-sky-400" />
+            <PlusCircle className="h-4 w-4" />
             <span>Nova Demanda</span>
           </button>
         )}
 
-        {/* Dropdown de Alertas Preventivos no Cantinho do Lado Direito */}
+        {/* Notificações e Prazos */}
         <div className="relative">
           <button
             onClick={() => setShowAlertsDropdown(!showAlertsDropdown)}
-            className="relative p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-            title="Alertas de Vigência e Prazos"
+            className="relative p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+            title="Notificações e avisos de gestão"
           >
             <Bell className="h-4 w-4" />
-            {(alertas.totalAlertas > 0 || qtdPendentes > 0) && (
-              <span className="absolute top-1 right-1 h-4 w-4 rounded-full bg-rose-600 text-white text-[10px] font-bold flex items-center justify-center animate-pulse">
-                {alertas.totalAlertas + (qtdPendentes > 0 ? 1 : 0)}
-              </span>
+            {(alertas.totalAlertas > 0 || (isCoordenadoraGeral && qtdPendentes > 0)) && (
+              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-amber-500 ring-2 ring-white"></span>
             )}
           </button>
 
@@ -121,7 +118,7 @@ export function Header({
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 text-amber-500" />
                   <h3 className="font-semibold text-xs text-slate-900">
-                    Alertas Preventivos de Gestão ({alertas.totalAlertas + (qtdPendentes > 0 ? 1 : 0)})
+                    Alertas Preventivos de Gestão ({alertas.totalAlertas + (isCoordenadoraGeral && qtdPendentes > 0 ? 1 : 0)})
                   </h3>
                 </div>
                 <button
@@ -132,8 +129,8 @@ export function Header({
                 </button>
               </div>
 
-              {/* Alerta de Cadastros Pendentes da SG */}
-              {qtdPendentes > 0 && (
+              {/* Alerta de Cadastros Pendentes da SG (Exclusivo da Coordenadora Geral de Gestão) */}
+              {isCoordenadoraGeral && qtdPendentes > 0 && (
                 <div className="mt-2.5 mb-1 p-2.5 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">

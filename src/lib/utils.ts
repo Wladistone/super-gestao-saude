@@ -89,3 +89,14 @@ export function getVigenciaBadge(daysRemaining: number) {
     urgency: "safe",
   };
 }
+
+export function extrairPrimeiroNome(nomeCompleto?: string | null): string {
+  if (!nomeCompleto) return "Servidor";
+  let limpo = nomeCompleto
+    .trim()
+    .replace(/^([Dd]ra?\.?|[Dd]rª\.?|[Dd]rª|[Ee]nf\.?|[Pp]rofa?\.?|[Ss]ra?\.?)\s+/i, "");
+  limpo = limpo.replace(/\s*\([^)]*\)$/, "").trim();
+  const partes = limpo.split(/\s+/);
+  return partes[0] || "Servidor";
+}
+

@@ -3,6 +3,17 @@
 import { dataStore } from "@/lib/data-store";
 import { revalidatePath } from "next/cache";
 import { PermissaoModulo } from "@/lib/types";
+import {
+  enviarEmailBoasVindasCadastro,
+  enviarEmailCadastroRejeitado,
+  enviarEmailEnquadramentoDemanda,
+  enviarEmailDiligenciaDemanda,
+  enviarEmailDirecionamentoDemandaSG,
+  obterConfiguracaoEmail,
+  testarConexaoSmtp,
+  salvarConfiguracaoSmtp,
+  DadosConfiguracaoSmtp,
+} from "@/lib/email-service";
 
 export async function getDashboardDataAction() {
   const store = dataStore;
@@ -134,12 +145,124 @@ export async function enquadrarDemandaSGAction(dados: {
   servidorSGDestinoCargo?: string;
   servidorSGDestinoEmail?: string;
   artefatosDisponibilizados?: string[];
+  permissoesAcesso?: any;
+  modelosDisponibilizadosOriginador?: {
+    id: string;
+    titulo: string;
+    tipoPeca: string;
+    artigoLei?: string;
+    downloadUrl?: string;
+  }[];
+  servidorOriginadorEmail?: string;
+  servidorOriginadorNome?: string;
 }) {
   const res = dataStore.enquadrarDemandaSG(dados);
+
+  let emailDisparado: any = null;
+
+  if (res.success) {
+    const demanda = dataStore.demandasPrevias.find((d) => d.id === dados.demandaId);
+    const emailDestinatario = (dados.servidorOriginadorEmail || demanda?.responsavelEmail || "comprassaude@arapiraca.al.gov.br").trim();
+    const servidorNome = dados.servidorOriginadorNome || demanda?.responsavelNome || "Servidor Demandante";
+
+    try {
+      emailDisparado = await enviarEmailEnquadramentoDemanda({
+        servidorNome,
+        servidorEmail: emailDestinatario,
+        numeroDemanda: demanda?.numeroDemanda || dados.demandaId,
+        superintendencia: demanda ? `${demanda.superintendenciaNome} (${demanda.superintendenciaOrigem})` : "SMS Arapiraca",
+        objeto: demanda?.objeto || "Aquisição e Contratações de Saúde",
+        coordenadoraNome: dados.coordenadoraNome || dados.analistaSG,
+        modalidadeNome: dados.modalidadeDefinidaNome,
+        artigoLei: dados.artigoLeiBase,
+        justificativaEnquadramento: dados.justificativaEnquadramento,
+        numeroProcesso: res.processoGerado?.numeroProcesso,
+        servidorSGDesignado: dados.servidorSGDestinoNome,
+        artefatos: dados.artefatosDisponibilizados || [
+          "Documento de Formalização da Demanda (DFD)",
+          "Estudo Técnico Preliminar (ETP)",
+          "Termo de Referência (TR)",
+          "Matriz de Riscos da Contratação",
+        ],
+      });
+    } catch (emailErr) {
+      console.error("Falha ao disparar e-mail de enquadramento ao demandante:", emailErr);
+    }
+
+    // Mensagem 5: Disparo de e-mail ao servidor da SG designado pela Coordenadora Geral
+    if (dados.servidorSGDestinoEmail) {
+      try {
+        await enviarEmailDirecionamentoDemandaSG({
+          servidorNome: dados.servidorSGDestinoNome || "Servidor da SG",
+          servidorEmail: dados.servidorSGDestinoEmail,
+          numeroDemanda: demanda?.numeroDemanda || dados.demandaId,
+          superintendencia: demanda ? `${demanda.superintendenciaNome} (${demanda.superintendenciaOrigem})` : "SMS Arapiraca",
+          objeto: demanda?.objeto || "Aquisição e Contratações de Saúde",
+          modalidadeNome: dados.modalidadeDefinidaNome,
+          artigoLei: dados.artigoLeiBase,
+          numeroProcesso: res.processoGerado?.numeroProcesso,
+          servidorOriginadorNome: servidorNome,
+          coordenadoraNome: dados.coordenadoraNome || dados.analistaSG,
+        });
+      } catch (sgErr) {
+        console.error("Falha ao disparar e-mail de direcionamento para o servidor SG:", sgErr);
+      }
+    }
+  }
+
   revalidatePath("/tramitacao");
   revalidatePath("/processos");
   revalidatePath("/");
-  return res;
+
+  return {
+    ...res,
+    emailDisparado,
+  };
+}
+
+export async function direcionarDemandaSGAction(dados: {
+  demandaId: string;
+  coordenadoraNome?: string;
+  servidorSGDestinoId: string;
+  servidorSGDestinoNome: string;
+  servidorSGDestinoCargo?: string;
+  servidorSGDestinoEmail?: string;
+  observacoes?: string;
+  permissoesAcesso?: any;
+  artefatosDisponibilizados?: string[];
+}) {
+  const res = dataStore.direcionarDemandaSG(dados);
+
+  let emailDisparado: any = null;
+
+  if (res.success && dados.servidorSGDestinoEmail) {
+    const demanda = dataStore.demandasPrevias.find((d) => d.id === dados.demandaId);
+    try {
+      emailDisparado = await enviarEmailDirecionamentoDemandaSG({
+        servidorNome: dados.servidorSGDestinoNome,
+        servidorEmail: dados.servidorSGDestinoEmail,
+        numeroDemanda: demanda?.numeroDemanda || dados.demandaId,
+        superintendencia: demanda ? `${demanda.superintendenciaNome} (${demanda.superintendenciaOrigem})` : "SMS Arapiraca",
+        objeto: demanda?.objeto || "Aquisição e Contratações de Saúde",
+        modalidadeNome: demanda?.enquadramentoSG?.modalidadeDefinidaNome || "Em Análise pela SG",
+        artigoLei: demanda?.enquadramentoSG?.artigoLeiBase || "Lei Federal nº 14.133/2021",
+        numeroProcesso: demanda?.enquadramentoSG?.numeroProcessoGerado,
+        servidorOriginadorNome: demanda?.responsavelNome || "Servidor Demandante",
+        coordenadoraNome: dados.coordenadoraNome || "Dra. Willianne Soares (Coordenadora Geral de Gestão)",
+      });
+    } catch (err) {
+      console.error("Falha ao disparar e-mail de direcionamento para o servidor SG:", err);
+    }
+  }
+
+  revalidatePath("/tramitacao");
+  revalidatePath("/processos");
+  revalidatePath("/");
+
+  return {
+    ...res,
+    emailDisparado,
+  };
 }
 
 export async function registrarVisualizacaoDirecionamentoSGAction(dados: {
@@ -153,12 +276,74 @@ export async function registrarVisualizacaoDirecionamentoSGAction(dados: {
   return res;
 }
 
+export async function concluirElaboracaoDocumentosOriginadorAction(dados: {
+  demandaId: string;
+  servidorNome: string;
+  servidorEmail?: string;
+  observacoes?: string;
+  documentosProntos?: string[];
+}) {
+  const res = dataStore.concluirElaboracaoDocumentosOriginador(dados);
+
+  if (res.success && res.demanda && res.demanda.enquadramentoSG?.direcionamentoSG?.servidorSGEmail) {
+    const demanda = res.demanda;
+    const enq = demanda.enquadramentoSG;
+    const dirSG = enq?.direcionamentoSG;
+    if (dirSG && dirSG.servidorSGEmail) {
+      try {
+        await enviarEmailDirecionamentoDemandaSG({
+          servidorNome: dirSG.servidorSGNome || "Servidor da SG",
+          servidorEmail: dirSG.servidorSGEmail,
+          numeroDemanda: demanda.numeroDemanda,
+          superintendencia: `${demanda.superintendenciaNome} (${demanda.superintendenciaOrigem})`,
+          objeto: demanda.objeto,
+          modalidadeNome: enq?.modalidadeDefinidaNome || "Definida pela SG",
+          artigoLei: enq?.artigoLeiBase || "Lei Federal nº 14.133/2021",
+          numeroProcesso: enq?.numeroProcessoGerado,
+          servidorOriginadorNome: dados.servidorNome,
+          coordenadoraNome: `Unidade Técnica ${demanda.superintendenciaOrigem} (Elaboração Concluída)`,
+        });
+      } catch (e) {
+        console.error("Erro ao notificar servidor SG sobre conclusão dos documentos:", e);
+      }
+    }
+  }
+
+  revalidatePath("/tramitacao");
+  revalidatePath("/processos");
+  revalidatePath("/");
+  return res;
+}
+
 export async function solicitarDiligenciaSGAction(dados: {
   demandaId: string;
   analistaSG: string;
   motivoDiligencia: string;
+  servidorOriginadorEmail?: string;
+  servidorOriginadorNome?: string;
 }) {
   const res = dataStore.solicitarDiligenciaSG(dados);
+
+  if (res.success) {
+    const demanda = dataStore.demandasPrevias.find((d) => d.id === dados.demandaId);
+    const emailDestinatario = (dados.servidorOriginadorEmail || demanda?.responsavelEmail || "comprassaude@arapiraca.al.gov.br").trim();
+    const servidorNome = dados.servidorOriginadorNome || demanda?.responsavelNome || "Servidor Demandante";
+
+    try {
+      await enviarEmailDiligenciaDemanda({
+        servidorNome,
+        servidorEmail: emailDestinatario,
+        numeroDemanda: demanda?.numeroDemanda || dados.demandaId,
+        superintendencia: demanda ? `${demanda.superintendenciaNome} (${demanda.superintendenciaOrigem})` : "SMS Arapiraca",
+        objeto: demanda?.objeto || "Aquisição e Contratações de Saúde",
+        motivoDiligencia: dados.motivoDiligencia,
+        analistaNome: dados.analistaSG,
+      });
+    } catch (err) {
+      console.error("Falha ao disparar e-mail de diligência:", err);
+    }
+  }
+
   revalidatePath("/tramitacao");
   revalidatePath("/processos");
   revalidatePath("/");
@@ -288,28 +473,186 @@ export async function autorizarCadastroAction(dados: {
   permissoes: PermissaoModulo[];
   autorizadorNome: string;
   observacoesSG?: string;
+  email?: string;
+  nomeCompleto?: string;
+  matricula?: string;
+  superintendenciaLotacao?: string;
+  cargo?: string;
 }) {
+  // 1. Tenta achar por ID
+  let solicitacao = dataStore.solicitacoesCadastro.find((c) => c.id === dados.id);
+
+  // 2. Se não achou por ID, tenta por e-mail
+  if (!solicitacao && dados.email) {
+    const e = dados.email.trim().toLowerCase();
+    solicitacao = dataStore.solicitacoesCadastro.find((c) => c.email.trim().toLowerCase() === e);
+  }
+
+  // 3. Se ainda assim não existe na memória do servidor, registra
+  if (!solicitacao && dados.email && dados.nomeCompleto) {
+    solicitacao = dataStore.adicionarSolicitacaoCadastro({
+      email: dados.email,
+      nomeCompleto: dados.nomeCompleto,
+      dataNascimento: "1990-01-01",
+      cpf: "000.000.000-00",
+      matricula: dados.matricula || "SG-001",
+      superintendenciaLotacao: dados.superintendenciaLotacao || "SAS",
+      cargo: dados.cargo || "Servidor",
+    });
+  }
+
+  const idAlvo = solicitacao ? solicitacao.id : dados.id;
+
   const res = dataStore.autorizarCadastro(
-    dados.id,
+    idAlvo,
     dados.permissoes,
     dados.autorizadorNome,
     dados.observacoesSG
   );
+
+  let emailDisparado: any = null;
+
+  const emailDestino = (solicitacao?.email || dados.email || "").trim();
+  const nomeDestino = solicitacao?.nomeCompleto || dados.nomeCompleto || "Servidor";
+  const matriculaDestino = solicitacao?.matricula || dados.matricula || "SG-001";
+  const superDestino = solicitacao?.superintendenciaLotacao || dados.superintendenciaLotacao || "SAS";
+  const cargoDestino = solicitacao?.cargo || dados.cargo || "Servidor";
+
+  if (emailDestino) {
+    try {
+      console.log(`[SuperGestão] Disparando e-mail de boas-vindas para: ${emailDestino}...`);
+      emailDisparado = await enviarEmailBoasVindasCadastro({
+        nomeCompleto: nomeDestino,
+        email: emailDestino,
+        matricula: matriculaDestino,
+        superintendencia: superDestino,
+        cargo: cargoDestino,
+        autorizadorNome: dados.autorizadorNome,
+        observacoesSG: dados.observacoesSG,
+        permissoes: dados.permissoes,
+      });
+      console.log(`[SuperGestão] E-mail enviado para ${emailDestino}. Status: ${emailDisparado?.success}, ID: ${emailDisparado?.messageId}`);
+
+      if (solicitacao) {
+        solicitacao.notificacaoEmail = {
+          enviado: emailDisparado.success,
+          dataHora: emailDisparado.timestamp,
+          destinatario: emailDestino,
+          assunto: emailDisparado.assunto,
+          modo: emailDisparado.modo,
+          mensagemId: emailDisparado.messageId,
+        };
+        dataStore.salvarSolicitacoesStorage();
+      }
+    } catch (emailErr) {
+      console.error("Falha ao disparar e-mail de boas-vindas do cadastro:", emailErr);
+    }
+  }
+
   revalidatePath("/cadastro");
   revalidatePath("/");
-  return { success: res };
+
+  return {
+    success: res,
+    emailDisparado,
+  };
+}
+
+export async function reenviarEmailBoasVindasAction(dados: {
+  id?: string;
+  email: string;
+  nomeCompleto?: string;
+  matricula?: string;
+  superintendencia?: string;
+  cargo?: string;
+  autorizadorNome?: string;
+  observacoesSG?: string;
+  permissoes?: PermissaoModulo[];
+}) {
+  let solicitacao = dados.id ? dataStore.solicitacoesCadastro.find((c) => c.id === dados.id) : undefined;
+  if (!solicitacao && dados.email) {
+    const e = dados.email.trim().toLowerCase();
+    solicitacao = dataStore.solicitacoesCadastro.find((c) => c.email.trim().toLowerCase() === e);
+  }
+
+  const emailDestino = (solicitacao?.email || dados.email).trim();
+  const nomeDestino = solicitacao?.nomeCompleto || dados.nomeCompleto || "Servidor";
+  const matriculaDestino = solicitacao?.matricula || dados.matricula || "SG-001";
+  const superDestino = solicitacao?.superintendenciaLotacao || dados.superintendencia || "SAS";
+  const cargoDestino = solicitacao?.cargo || dados.cargo || "Servidor";
+  const autorizador = dados.autorizadorNome || solicitacao?.autorizadoPor || "Dra. Willianne Soares (Coordenadora Geral de Gestão / SG)";
+  const permissoes = dados.permissoes || solicitacao?.permissoes || [];
+
+  const resEmail = await enviarEmailBoasVindasCadastro({
+    nomeCompleto: nomeDestino,
+    email: emailDestino,
+    matricula: matriculaDestino,
+    superintendencia: superDestino,
+    cargo: cargoDestino,
+    autorizadorNome: autorizador,
+    observacoesSG: dados.observacoesSG || solicitacao?.observacoesSG,
+    permissoes,
+  });
+
+  if (solicitacao) {
+    solicitacao.notificacaoEmail = {
+      enviado: resEmail.success,
+      dataHora: resEmail.timestamp,
+      destinatario: emailDestino,
+      assunto: resEmail.assunto,
+      modo: resEmail.modo,
+      mensagemId: resEmail.messageId,
+    };
+    dataStore.salvarSolicitacoesStorage();
+  }
+
+  revalidatePath("/cadastro");
+  revalidatePath("/");
+
+  return resEmail;
 }
 
 export async function rejeitarCadastroAction(dados: {
   id: string;
   motivoRejeicao: string;
   autorizadorNome: string;
+  email?: string;
+  nomeCompleto?: string;
+  matricula?: string;
+  superintendenciaLotacao?: string;
+  cargo?: string;
 }) {
+  let solicitacao = dataStore.solicitacoesCadastro.find((c) => c.id === dados.id);
+  if (!solicitacao && dados.email) {
+    const e = dados.email.trim().toLowerCase();
+    solicitacao = dataStore.solicitacoesCadastro.find((c) => c.email.trim().toLowerCase() === e);
+  }
+
   const res = dataStore.rejeitarCadastro(
     dados.id,
     dados.motivoRejeicao,
     dados.autorizadorNome
   );
+
+  const emailDestino = (solicitacao?.email || dados.email || "").trim();
+  const nomeDestino = solicitacao?.nomeCompleto || dados.nomeCompleto || "Servidor";
+
+  if (emailDestino) {
+    try {
+      await enviarEmailCadastroRejeitado({
+        nomeCompleto: nomeDestino,
+        email: emailDestino,
+        motivoRejeicao: dados.motivoRejeicao,
+        matricula: solicitacao?.matricula || dados.matricula,
+        superintendencia: solicitacao?.superintendenciaLotacao || dados.superintendenciaLotacao,
+        cargo: solicitacao?.cargo || dados.cargo,
+        autorizadorNome: dados.autorizadorNome,
+      });
+    } catch (err) {
+      console.error("Falha ao disparar e-mail de rejeição de cadastro:", err);
+    }
+  }
+
   revalidatePath("/cadastro");
   revalidatePath("/");
   return { success: res };
@@ -319,3 +662,36 @@ export async function obterSolicitacoesCadastroAction() {
   return dataStore.obterSolicitacoesCadastro();
 }
 
+export async function obterEmailsEnviadosAction() {
+  return dataStore.obterEmailsEnviados();
+}
+
+export async function obterStatusConfiguracaoEmailAction() {
+  return obterConfiguracaoEmail();
+}
+
+export async function testarConexaoSmtpAction(dados: DadosConfiguracaoSmtp) {
+  return testarConexaoSmtp(dados);
+}
+
+export async function salvarConfiguracaoSmtpAction(dados: DadosConfiguracaoSmtp) {
+  const res = await salvarConfiguracaoSmtp(dados);
+  revalidatePath("/");
+  return res;
+}
+
+export async function zerarCadastrosAction() {
+  dataStore.zerarSolicitacoesCadastro();
+  revalidatePath("/cadastro");
+  revalidatePath("/solicitacoes");
+  revalidatePath("/");
+  return { success: true };
+}
+
+export async function excluirCadastroAction(id: string) {
+  const res = dataStore.excluirSolicitacaoCadastro(id);
+  revalidatePath("/cadastro");
+  revalidatePath("/solicitacoes");
+  revalidatePath("/");
+  return { success: res };
+}

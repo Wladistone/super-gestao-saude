@@ -1,5 +1,6 @@
 export type PerfilUsuario =
   | "ADMINISTRADOR"
+  | "SERVIDOR_SG"
   | "GESTOR_CONTRATOS"
   | "FISCAL_CONTRATO"
   | "COORDENACAO_FROTAS"
@@ -89,6 +90,14 @@ export interface SolicitacaoCadastro {
   dataAutorizacao?: string;
   observacoesSG?: string;
   motivoRejeicao?: string;
+  notificacaoEmail?: {
+    enviado: boolean;
+    dataHora: string;
+    destinatario: string;
+    assunto: string;
+    modo: "smtp" | "simulado";
+    mensagemId?: string;
+  };
 }
 
 export interface ModuloSistemaDef {
@@ -122,7 +131,7 @@ export const MODULOS_SISTEMA_DISPONIVEIS: ModuloSistemaDef[] = [
   },
   {
     id: "solicitacoes",
-    nome: "Solicitações de Demandas Prévias",
+    nome: "Solicitações",
     descricao: "Abertura, justificativas e acompanhamento de demandas setoriais para contratações.",
     iconeNome: "ClipboardList",
     badge: "Demandas",
@@ -157,7 +166,7 @@ export const MODULOS_SISTEMA_DISPONIVEIS: ModuloSistemaDef[] = [
   },
   {
     id: "judicializacao",
-    nome: "Judicialização da Saúde",
+    nome: "Núcleo de Judicialização",
     descricao: "Demandas judiciais, liminares, fornecimento de medicamentos e bloqueios sob prazos fatais.",
     iconeNome: "Scale",
     badge: "Prazos Fatais",
@@ -209,6 +218,7 @@ export type StatusDemandaPrevia =
   | "EM_ANALISE_SG"
   | "DILIGENCIA_SOLICITADA"
   | "ENQUADRADA_E_AUTORIZADA"
+  | "DOCUMENTOS_PRONTOS_SG"
   | "INDEFERIDA_SG";
 
 export interface ItemDemandaPrevia {
@@ -249,6 +259,22 @@ export interface DemandaPreviaProcesso {
     observacoesSG?: string;
     processoAdministrativoId?: string;
     numeroProcessoGerado?: string;
+    // Modelos oficiais da modalidade selecionados pela Coordenadora para o servidor originador
+    modelosDisponibilizadosOriginador?: {
+      id: string;
+      titulo: string;
+      tipoPeca: string;
+      artigoLei?: string;
+      downloadUrl?: string;
+    }[];
+    // Conclusão da elaboração dos documentos pelo servidor originador e envio para o servidor da SG
+    elaboracaoOriginadorConcluida?: {
+      concluido: boolean;
+      dataHoraConclusao: string;
+      servidorNome: string;
+      observacoes?: string;
+      documentosProntos: string[];
+    };
     // Direcionamento simultâneo para servidor da SG conduzir o processo
     direcionamentoSG?: {
       servidorSGId: string;
@@ -259,6 +285,28 @@ export interface DemandaPreviaProcesso {
       coordenadoraNome: string;
       dataHoraVisualizacao?: string;
       visualizado: boolean;
+    };
+    // Permissões granulares de visualização e edição concedidas pela Coordenadora Geral
+    permissoesAcesso?: {
+      servidorSG?: {
+        podeVisualizarItens: boolean;
+        podeEditarItens: boolean;
+        podeElaborarTR: boolean;
+        podeElaborarETP: boolean;
+        podeElaborarMatrizRiscos: boolean;
+        podeElaborarPesquisaPrecos: boolean;
+        podeAnexarMinutas: boolean;
+      };
+      servidorOriginador?: {
+        somenteLeitura: boolean;
+        podeEditarDFD: boolean;
+        podeEditarETP: boolean;
+        podeEditarTR: boolean;
+        podeEditarMatrizRiscos: boolean;
+        podeEditarPesquisaPrecos: boolean;
+        podeAnexarLaudos: boolean;
+      };
+      artefatosLiberados?: string[];
     };
     // Notificações automáticas enviadas ao servidor originador da demanda
     notificacoesOriginador?: {
@@ -644,4 +692,37 @@ export interface DocumentoElaborado {
   downloadUrlOriginal?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface RegistroEmailEnviado {
+  id: string;
+  tipo:
+    | "AUTORIZACAO_CADASTRO"
+    | "CADASTRO_REJEITADO"
+    | "ENQUADRAMENTO_DEMANDA"
+    | "DILIGENCIA_DEMANDA"
+    | "DIRECIONAMENTO_SG"
+    | "TESTE_SISTEMA"
+    | "OUTRO";
+  destinatarioEmail: string;
+  destinatarioNome: string;
+  assunto: string;
+  corpoTexto: string;
+  corpoHtml: string;
+  dataHoraEnvio: string;
+  autorNome: string;
+  statusEnvio: "ENVIADO" | "SIMULADO_SUCESSO" | "FALHA";
+  modo: "smtp" | "simulado";
+  mensagemId?: string;
+  erro?: string;
+  metadados?: {
+    demandaId?: string;
+    numeroDemanda?: string;
+    solicitacaoId?: string;
+    matricula?: string;
+    processoNumero?: string;
+    modalidade?: string;
+    artefatos?: string[];
+    [key: string]: any;
+  };
 }

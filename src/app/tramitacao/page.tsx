@@ -13,8 +13,9 @@ import {
   ServidorSMS,
   SUPERINTENDENCIAS_SMS,
 } from "@/data/demandas-previas-data";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, extrairPrimeiroNome } from "@/lib/utils";
 import { EnquadramentoSGModal } from "@/components/processos/enquadramento-sg-modal";
+import { ConcluirDocumentosOriginadorModal } from "@/components/processos/concluir-documentos-originador-modal";
 import { ResponderDiligenciaModal } from "@/components/tramitacao/responder-diligencia-modal";
 import { DespacharTramitacaoModal } from "@/components/tramitacao/despachar-tramitacao-modal";
 import { obterModelosPorModalidade } from "@/data/modelos-licitacao-catalog";
@@ -62,13 +63,15 @@ import {
   ChevronRight,
   ShieldCheck,
   TrendingUp,
+  Settings,
+  FileCheck2,
 } from "lucide-react";
 
 type PastaCaixa = "todas" | "entrada" | "enviadas_nao_retornadas" | "retornadas" | "diligencias";
 
 export default function TramitacaoGovernancaPage() {
   // Estado do servidor ativo selecionado
-  const [servidorAtivoId, setServidorAtivoId] = useState<string>("serv-carlos-sg");
+  const [servidorAtivoId, setServidorAtivoId] = useState<string>("usr-coord-geral");
 
   // Estado da navegação: inicia sem pasta ativa para deixar a área ao lado em branco (conforme solicitado pelo usuário)
   const [pastaAtiva, setPastaAtiva] = useState<PastaCaixa | null>(null);
@@ -81,12 +84,15 @@ export default function TramitacaoGovernancaPage() {
 
   // Estados de Modais
   const [isEnquadramentoOpen, setIsEnquadramentoOpen] = useState(false);
+  const [enquadramentoModoInicial, setEnquadramentoModoInicial] = useState<"ENQUADRAMENTO" | "DIRECIONAMENTO_SG">("ENQUADRAMENTO");
+  const [isConcluirDocumentosOpen, setIsConcluirDocumentosOpen] = useState(false);
   const [isResponderDiligenciaOpen, setIsResponderDiligenciaOpen] = useState(false);
   const [isDespachoOpen, setIsDespachoOpen] = useState(false);
   const [copiadoProtocolo, setCopiadoProtocolo] = useState(false);
   const [copiadoNotificacao, setCopiadoNotificacao] = useState(false);
   const [visualizadoMap, setVisualizadoMap] = useState<Record<string, { visualizado: boolean; dataHora: string }>>({});
   const [salvandoVisualizacao, setSalvandoVisualizacao] = useState(false);
+  const [versaoDados, setVersaoDados] = useState(0);
   const [qtdPendentesCadastros, setQtdPendentesCadastros] = useState(0);
   const [usuarioLogado, setUsuarioLogado] = useState<{
     id?: string;
@@ -102,10 +108,21 @@ export default function TramitacaoGovernancaPage() {
     try {
       const salvo = localStorage.getItem("supergestao_usuario_logado");
       if (salvo) {
-        const u = JSON.parse(salvo);
+        let u = JSON.parse(salvo);
+        const email = (u.email || "").toLowerCase().trim();
+        const isDraWillianne = email === "will2026@gmail.com" || u.id === "usr-coord-geral";
+
+        if (!isDraWillianne) {
+          if (u.perfil === "ADMINISTRADOR") {
+            u.perfil = u.setor === "SG" ? "SERVIDOR_SG" : "SERVIDOR_SETORIAL";
+          }
+        }
         setUsuarioLogado(u);
         if (u.setor && u.setor !== "SG" && u.email !== "will2026@gmail.com") {
           setSuperintendenciaFiltro(u.setor);
+        }
+        if (!isDraWillianne && u.id) {
+          setServidorAtivoId(u.id.startsWith("usr-") ? u.id : `usr-${u.id}`);
         }
       }
     } catch {
@@ -118,32 +135,97 @@ export default function TramitacaoGovernancaPage() {
     const atualizar = () => {
       setQtdPendentesCadastros(dataStore.obterQtdCadastrosPendentes());
       carregarUsuario();
+      setVersaoDados((v) => v + 1);
     };
     atualizar();
 
     window.addEventListener("supergestao_cadastro_atualizado", atualizar);
+    window.addEventListener("supergestao_demanda_atualizada", atualizar);
     window.addEventListener("storage", atualizar);
 
     return () => {
       window.removeEventListener("supergestao_cadastro_atualizado", atualizar);
+      window.removeEventListener("supergestao_demanda_atualizada", atualizar);
       window.removeEventListener("storage", atualizar);
     };
   }, []);
 
-  // Determina se o usuário logado é da SG (Superintendência de Gestão)
-  const isGestorSG = useMemo(() => {
+  // Determina se o usuário ativo é a Coordenadora Geral de Gestão (Dra. Willianne Soares exclusivamente)
+  const isCoordenadoraGeral = useMemo(() => {
     if (!usuarioLogado) return true;
-    const email = (usuarioLogado.email || "").toLowerCase();
-    const setor = (usuarioLogado.setor || "").toUpperCase();
-    const cargo = (usuarioLogado.cargo || "").toLowerCase();
+    const email = (usuarioLogado.email || "").toLowerCase().trim();
+    const id = (usuarioLogado.id || "").trim();
+    const nome = (usuarioLogado.nome || "").toLowerCase().trim();
+
+    return (
+      email === "will2026@gmail.com" ||
+      id === "usr-coord-geral" ||
+      nome.includes("willianne")
+    );
+  }, [usuarioLogado]);
+
+  // Determina se o usuário logado é da SG (Superintendência de Gestão)
+  const isServidorSG = useMemo(() => {
+    if (!usuarioLogado) return true;
+    const email = (usuarioLogado.email || "").toLowerCase().trim();
+    const setor = (usuarioLogado.setor || "").toUpperCase().trim();
+    const cargo = (usuarioLogado.cargo || "").toLowerCase().trim();
+    const perfil = (usuarioLogado.perfil || "").toUpperCase().trim();
+
     return (
       email === "will2026@gmail.com" ||
       setor === "SG" ||
+      setor.includes("SUPERINTENDÊNCIA DE GESTÃO") ||
       cargo.includes("gestão") ||
-      cargo.includes("coordenadora geral") ||
-      (usuarioLogado.perfil === "ADMINISTRADOR" && setor === "SG")
+      perfil === "SERVIDOR_SG"
     );
   }, [usuarioLogado]);
+
+  const isGestorSG = isServidorSG;
+
+  // Função auxiliar para verificar se a demanda foi direcionada nominalmente para um servidor da SG
+  const foiDirecionadaParaServidor = (
+    demanda: DemandaPreviaProcesso,
+    usuarioOuServidor?: { id?: string; email?: string; nome?: string; matricula?: string } | null
+  ) => {
+    if (!demanda.enquadramentoSG?.direcionamentoSG) return false;
+    if (!usuarioOuServidor) return false;
+
+    const dir = demanda.enquadramentoSG.direcionamentoSG;
+    const alvoId = String(usuarioOuServidor.id || "").toLowerCase().trim();
+    const dirId = String(dir.servidorSGId || "").toLowerCase().trim();
+
+    if (alvoId && dirId) {
+      if (alvoId === dirId || alvoId.replace(/^usr-/, "") === dirId.replace(/^usr-/, "")) {
+        return true;
+      }
+    }
+
+    const alvoEmail = String(usuarioOuServidor.email || "").toLowerCase().trim();
+    const dirEmail = String(dir.servidorSGEmail || "").toLowerCase().trim();
+    if (alvoEmail && dirEmail && alvoEmail === dirEmail) {
+      return true;
+    }
+
+    const alvoMatricula = String((usuarioOuServidor as any).matricula || "").toLowerCase().trim();
+    const dirMatricula = String((dir as any).servidorSGMatricula || "").toLowerCase().trim();
+    if (alvoMatricula && dirMatricula && alvoMatricula === dirMatricula) {
+      return true;
+    }
+
+    const alvoNome = String(usuarioOuServidor.nome || "").toLowerCase().trim();
+    const dirNome = String(dir.servidorSGNome || "").toLowerCase().trim();
+    if (alvoNome && dirNome) {
+      if (alvoNome === dirNome) return true;
+      const primeiroAlvo = alvoNome.split(" ")[0];
+      const primeiroDir = dirNome.split(" ")[0];
+      if (primeiroAlvo.length >= 3 && primeiroAlvo === primeiroDir) {
+        return true;
+      }
+    }
+
+    return false;
+  };
 
   const handleVisualizarDirecionamento = async (demandaId: string, servidorNome?: string) => {
     setSalvandoVisualizacao(true);
@@ -162,24 +244,66 @@ export default function TramitacaoGovernancaPage() {
     }
   };
 
+  // Lista viva de servidores oficiais disponíveis (SG e Setoriais homologados)
+  const servidoresDisponiveis: ServidorSMS[] = useMemo(() => {
+    const base: ServidorSMS[] = [...SERVIDORES_SMS];
+    const cadastrados = dataStore
+      .obterSolicitacoesCadastro()
+      .filter((s) => s.status === "AUTORIZADO");
+
+    for (const cad of cadastrados) {
+      const isSG =
+        cad.superintendenciaLotacao === "SG" ||
+        cad.cargo.toLowerCase().includes("gestão") ||
+        cad.cargo.toLowerCase().includes("coordenador");
+
+      if (!base.some((b) => b.email.toLowerCase() === cad.email.toLowerCase())) {
+        base.push({
+          id: `usr-${cad.id}`,
+          nome: cad.nomeCompleto,
+          cargo: cad.cargo,
+          email: cad.email,
+          superintendencia: (cad.superintendenciaLotacao as any) || "SAS",
+          superintendenciaNome: `Superintendência ${cad.superintendenciaLotacao}`,
+          coordenacao: cad.superintendenciaLotacao,
+          avatarIniciais: cad.nomeCompleto.slice(0, 2).toUpperCase(),
+          papel: isSG ? "Instrução & Governança na SG" : `Demandante Técnico - ${cad.superintendenciaLotacao}`,
+          isSG,
+        });
+      }
+    }
+    return base;
+  }, [versaoDados]);
+
   // Servidor ativo
   const servidorAtivo: ServidorSMS | undefined = useMemo(() => {
-    return SERVIDORES_SMS.find((s) => s.id === servidorAtivoId);
-  }, [servidorAtivoId]);
+    return (
+      servidoresDisponiveis.find((s) => s.id === servidorAtivoId) ||
+      servidoresDisponiveis[0]
+    );
+  }, [servidorAtivoId, servidoresDisponiveis]);
 
-  // ISOLAMENTO SETORIAL E REGRAS DE VISIBILIDADE:
-  // "Quando a coordenadora Geral de Gestão autorizar a visualização para determinado servidor,
-  // ele só terá acesso aos processos e demandas relativas a sua superintendência.
-  // As demandas das demais superintendências ele não terá acesso.
-  // Essa regra não serve para os servidores da SG."
+  // REGRAS DE VISIBILIDADE E SEGREGAÇÃO INSTITUCIONAL:
+  // "lembrando que todos os servidores que estiverem lotados na SG poderão ver todas as demandas,
+  // mas no módulo TRAMITAÇÃO & GOVERNANÇA , ele só verá aqueles processos que a coordenadora geral
+  // de gestão direcionou para ele e não as demais demandas. Apenas a coordenadora geral de gestão poderá ver todos."
   const todasDemandas = useMemo(() => {
     const listaCompleta = dataStore.demandasPrevias;
-    if (isGestorSG) {
+
+    // 1. Apenas a Coordenadora Geral de Gestão pode ver todos os processos
+    if (isCoordenadoraGeral) {
       return listaCompleta;
     }
+
+    // 2. Servidores lotados na SG só veem processos que a Coordenadora Geral direcionou para ele
+    if (isServidorSG) {
+      return listaCompleta.filter((d) => foiDirecionadaParaServidor(d, usuarioLogado));
+    }
+
+    // 3. Servidores Setoriais só veem processos de sua superintendência de lotação
     const lotacao = (usuarioLogado?.setor || "SAS").toUpperCase();
     return listaCompleta.filter((d) => d.superintendenciaOrigem.toUpperCase() === lotacao);
-  }, [isGestorSG, usuarioLogado]);
+  }, [isCoordenadoraGeral, isServidorSG, usuarioLogado, versaoDados]);
 
   const handleCopiarTextoNotificacao = (demanda: DemandaPreviaProcesso) => {
     const dados = {
@@ -203,7 +327,8 @@ export default function TramitacaoGovernancaPage() {
   // Função para verificar se a demanda foi enviada pelo servidor ou sua superintendência
   const isEnviadaPorServidor = (demanda: DemandaPreviaProcesso, servidor?: ServidorSMS) => {
     if (!servidor) return true;
-    if (servidor.isSG) {
+    if (isCoordenadoraGeral) return true;
+    if (isServidorSG) {
       return demanda.historicoTramitacao.some((h) =>
         h.origem.includes("Superintendência de Gestão")
       );
@@ -218,7 +343,10 @@ export default function TramitacaoGovernancaPage() {
   // Função para verificar se o servidor participa da tramitação
   const servidorParticipa = (demanda: DemandaPreviaProcesso, servidor?: ServidorSMS) => {
     if (!servidor) return true;
-    if (servidor.isSG) return true;
+    if (isCoordenadoraGeral) return true;
+    if (isServidorSG) {
+      return foiDirecionadaParaServidor(demanda, usuarioLogado);
+    }
     return (
       demanda.superintendenciaOrigem === servidor.superintendencia ||
       demanda.historicoTramitacao.some(
@@ -237,8 +365,14 @@ export default function TramitacaoGovernancaPage() {
     );
 
     const enviadasNaoRetornadas = queParticipa.filter((d) => {
-      if (servidorAtivo?.isSG) {
+      if (isCoordenadoraGeral) {
         return d.status === "DILIGENCIA_SOLICITADA";
+      }
+      if (isServidorSG) {
+        return (
+          foiDirecionadaParaServidor(d, usuarioLogado) &&
+          (d.status === "DILIGENCIA_SOLICITADA" || d.status === "EM_ANALISE_SG")
+        );
       }
       return (
         isEnviadaPorServidor(d, servidorAtivo) &&
@@ -247,28 +381,49 @@ export default function TramitacaoGovernancaPage() {
     });
 
     const jaRetornaram = queParticipa.filter((d) => {
-      if (servidorAtivo?.isSG) {
+      if (isCoordenadoraGeral) {
         return (
           d.status === "ENQUADRADA_E_AUTORIZADA" ||
+          d.status === "DOCUMENTOS_PRONTOS_SG" ||
           d.status === "INDEFERIDA_SG"
+        );
+      }
+      if (isServidorSG) {
+        return (
+          foiDirecionadaParaServidor(d, usuarioLogado) &&
+          (d.status === "DOCUMENTOS_PRONTOS_SG" || d.status === "ENQUADRADA_E_AUTORIZADA")
         );
       }
       return (
         isEnviadaPorServidor(d, servidorAtivo) &&
         (d.status === "ENQUADRADA_E_AUTORIZADA" ||
+          d.status === "DOCUMENTOS_PRONTOS_SG" ||
           d.status === "DILIGENCIA_SOLICITADA" ||
           d.status === "INDEFERIDA_SG")
       );
     });
 
     const caixaEntrada = queParticipa.filter((d) => {
-      if (servidorAtivo?.isSG) {
+      if (isCoordenadoraGeral) {
         return (
           d.status === "AGUARDANDO_ENQUADRAMENTO_SG" ||
-          d.status === "EM_ANALISE_SG"
+          d.status === "EM_ANALISE_SG" ||
+          d.status === "DOCUMENTOS_PRONTOS_SG" ||
+          Boolean(d.enquadramentoSG?.direcionamentoSG)
         );
       }
-      return d.status === "DILIGENCIA_SOLICITADA";
+
+      if (isServidorSG) {
+        return foiDirecionadaParaServidor(d, usuarioLogado);
+      }
+
+      const isDoServidor = isEnviadaPorServidor(d, servidorAtivo);
+      return (
+        isDoServidor &&
+        (d.status === "ENQUADRADA_E_AUTORIZADA" ||
+          d.status === "DOCUMENTOS_PRONTOS_SG" ||
+          d.status === "DILIGENCIA_SOLICITADA")
+      );
     });
 
     const diligencias = queParticipa.filter(
@@ -282,7 +437,7 @@ export default function TramitacaoGovernancaPage() {
       caixaEntrada,
       diligencias,
     };
-  }, [todasDemandas, servidorAtivo]);
+  }, [todasDemandas, servidorAtivo, isCoordenadoraGeral, isServidorSG, usuarioLogado]);
 
   // Lista filtrada da pasta ativa
   const demandasFiltradas = useMemo(() => {
@@ -407,7 +562,7 @@ export default function TramitacaoGovernancaPage() {
 
           {/* Identificação do Servidor Autenticado (Limpa e Objetiva) */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
-            {isGestorSG ? (
+            {isCoordenadoraGeral ? (
               <div className="p-3 rounded-2xl bg-gradient-to-r from-sky-50 to-indigo-50/70 border border-sky-200/90 shadow-2xs flex items-center justify-between gap-3 min-w-[280px]">
                 <div className="flex items-center gap-2.5">
                   <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-700 text-white font-extrabold flex items-center justify-center text-xs shadow-xs shrink-0">
@@ -422,7 +577,7 @@ export default function TramitacaoGovernancaPage() {
                       {usuarioLogado?.nome || "Dra. Willianne Soares"}
                     </div>
                     <div className="text-[10px] text-slate-500 font-medium">
-                      Visão 360º de Todas as Superintendências
+                      Visão 360º de Todas as Demandas da SMS
                     </div>
                   </div>
                 </div>
@@ -436,6 +591,26 @@ export default function TramitacaoGovernancaPage() {
                   <SlidersHorizontal className="h-3.5 w-3.5" />
                 </button>
               </div>
+            ) : isServidorSG ? (
+              <div className="p-3 rounded-2xl bg-gradient-to-r from-sky-50 to-indigo-50/70 border border-sky-200/90 shadow-2xs flex items-center gap-3 min-w-[280px]">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-700 text-white font-extrabold flex items-center justify-center text-xs shadow-xs shrink-0">
+                    {usuarioLogado?.nome ? usuarioLogado.nome.slice(0, 2).toUpperCase() : "SG"}
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-sky-800 font-bold uppercase tracking-wider flex items-center gap-1">
+                      <UserCheck className="h-3 w-3 text-sky-600" />
+                      Servidor da SG ({usuarioLogado?.cargo || "Técnico Administrativo"})
+                    </div>
+                    <div className="font-extrabold text-slate-900 text-xs leading-tight">
+                      {usuarioLogado?.nome || "Servidor da SG"}
+                    </div>
+                    <div className="text-[10px] text-indigo-700 font-bold">
+                      Processos Direcionados pela Coordenação Geral
+                    </div>
+                  </div>
+                </div>
+              </div>
             ) : (
               <div className="p-3 rounded-2xl bg-gradient-to-r from-blue-50 to-sky-50 border border-blue-200 shadow-2xs flex items-center gap-3 min-w-[280px]">
                 <div className="h-10 w-10 rounded-xl bg-blue-700 text-white font-black flex items-center justify-center text-xs shadow-xs shrink-0">
@@ -446,7 +621,7 @@ export default function TramitacaoGovernancaPage() {
                     <UserCheck className="h-3 w-3" /> Servidor Setorial Conectado
                   </div>
                   <div className="font-extrabold text-slate-900 text-xs leading-tight">
-                    {usuarioLogado?.nome || "Wladistone Pereira"}
+                    {usuarioLogado?.nome || "Servidor Setorial"}
                   </div>
                   <div className="text-[10px] text-blue-800 font-bold">
                     Lotação: {usuarioLogado?.setor || "SAS"} • Acesso Restrito ao Setor
@@ -458,7 +633,7 @@ export default function TramitacaoGovernancaPage() {
         </div>
 
         {/* Dropdown Auxiliar de Simulação de Servidor (Apenas se Coordenadora acionar) */}
-        {isGestorSG && mostrarTrocaServidor && (
+        {isCoordenadoraGeral && mostrarTrocaServidor && (
           <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-center justify-between gap-3 animate-in fade-in">
             <span className="font-semibold text-slate-700 flex items-center gap-1.5">
               <SlidersHorizontal className="h-3.5 w-3.5 text-slate-500" />
@@ -474,14 +649,14 @@ export default function TramitacaoGovernancaPage() {
                 className="bg-white border border-slate-300 text-slate-800 text-xs rounded-lg py-1 px-2.5 font-medium focus:ring-1 focus:ring-sky-500 cursor-pointer shadow-2xs"
               >
                 <optgroup label="Superintendência de Gestão (SG)">
-                  {SERVIDORES_SMS.filter((s) => s.isSG).map((s) => (
+                  {servidoresDisponiveis.filter((s) => s.isSG).map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.nome} ({s.cargo})
                     </option>
                   ))}
                 </optgroup>
                 <optgroup label="Superintendências Setoriais">
-                  {SERVIDORES_SMS.filter((s) => !s.isSG).map((s) => (
+                  {servidoresDisponiveis.filter((s) => !s.isSG).map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.nome} — {s.superintendencia} ({s.coordenacao})
                     </option>
@@ -499,42 +674,57 @@ export default function TramitacaoGovernancaPage() {
           </div>
         )}
 
-        {/* Banner de Isolamento Setorial para Servidores não-SG */}
-        {!isGestorSG && (
-          <div className="p-3.5 rounded-2xl bg-blue-50/90 border border-blue-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-blue-950 shadow-2xs">
+        {/* Banner Informativo de Visão Restrita para Servidor SG não-coordenador */}
+        {isServidorSG && !isCoordenadoraGeral && (
+          <div className="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-indigo-950 shadow-2xs">
             <div className="flex items-center gap-2.5">
-              <ShieldAlert className="h-4 w-4 text-blue-700 shrink-0" />
+              <Inbox className="h-4 w-4 text-indigo-700 shrink-0" />
               <span>
-                <strong>Isolamento Setorial Ativo (Regra SG):</strong> Você está visualizando exclusivamente os processos e demandas da <strong>{usuarioLogado?.setor || "SAS"}</strong>. Processos de outras superintendências são restritos à governança da SG.
+                <strong>Caixa Postal da SG:</strong> Você está visualizando exclusivamente os processos que a <strong>Coordenadora Geral de Gestão (Dra. Willianne Soares)</strong> direcionou nominalmente para sua condução.
               </span>
             </div>
-            <span className="px-2.5 py-1 rounded-full font-bold text-[10px] bg-blue-200/80 text-blue-900 border border-blue-300 shrink-0">
-              {usuarioLogado?.setor || "SAS"} Exclusivo
+            <span className="px-2.5 py-0.5 rounded-full font-semibold text-[10px] bg-indigo-100 text-indigo-900 border border-indigo-200 shrink-0">
+              Superintendência de Gestão
             </span>
           </div>
         )}
 
-        {/* Alerta de Cadastros Pendentes da SG (Elegante e Compacto) */}
-        {isGestorSG && qtdPendentesCadastros > 0 && (
-          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-950 shadow-2xs animate-in fade-in">
+        {/* Banner de Visão Setorial para Servidores */}
+        {!isServidorSG && (
+          <div className="p-3.5 rounded-2xl bg-sky-50/70 border border-sky-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-sky-950 shadow-2xs">
+            <div className="flex items-center gap-2.5">
+              <Building2 className="h-4 w-4 text-sky-700 shrink-0" />
+              <span>
+                <strong>Visão Setorial:</strong> Você está visualizando os processos e demandas vinculados à sua lotação (<strong>{usuarioLogado?.setor || "SAS"}</strong>).
+              </span>
+            </div>
+            <span className="px-2.5 py-0.5 rounded-full font-semibold text-[10px] bg-sky-100 text-sky-900 border border-sky-200 shrink-0">
+              {usuarioLogado?.setor || "SAS"}
+            </span>
+          </div>
+        )}
+
+        {/* Alerta de Cadastros Pendentes da SG (Elegante e Compacto - Exclusivo da Coordenadora Geral) */}
+        {isCoordenadoraGeral && qtdPendentesCadastros > 0 && (
+          <div className="p-3.5 rounded-2xl bg-amber-50/90 border border-amber-200/90 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-950 shadow-2xs animate-in fade-in">
             <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-2xs">
-                <Bell className="h-4 w-4 animate-bounce" />
+              <div className="h-8 w-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 border border-amber-200">
+                <Bell className="h-4 w-4" />
               </div>
               <div>
                 <span className="font-bold text-slate-900 block">
-                  Atenção Coordenadora Geral: Existem {qtdPendentesCadastros} novos cadastros de servidores aguardando avaliação no módulo CADASTRO.
+                  Existem {qtdPendentesCadastros} novos cadastros aguardando avaliação
                 </span>
                 <span className="text-[11px] text-slate-600 block">
-                  Defina os privilégios de visualização e edição por módulo para liberar seus acessos institucionais.
+                  Configure as permissões de acesso no módulo de autorizações.
                 </span>
               </div>
             </div>
             <Link
               href="/cadastro"
-              className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shrink-0 transition-all shadow-xs flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl bg-amber-700 hover:bg-amber-800 text-white font-semibold text-xs shrink-0 transition-all shadow-xs flex items-center gap-1.5"
             >
-              <span>Avaliar e Autorizar</span>
+              <span>Avaliar Acessos</span>
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
@@ -804,20 +994,7 @@ export default function TramitacaoGovernancaPage() {
             </div>
           </div>
 
-          {/* Card Resumo de Governança Institucional */}
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-900 via-sky-950 to-slate-900 text-white space-y-2 text-xs shadow-sm">
-            <div className="font-extrabold flex items-center gap-1.5 text-sky-400">
-              <Sparkles className="h-4 w-4" />
-              Governança Central da SG
-            </div>
-            <p className="text-[11px] text-slate-300 leading-relaxed">
-              Fixação privativa de modalidade legal conforme a <strong>Lei nº 14.133/2021</strong> e liberação das minutas oficiais (DFD, ETP, TR) para os servidores setoriais.
-            </p>
-            <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-400 font-mono">
-              <span>Lei 14.133 / MROSC</span>
-              <span className="text-emerald-400 font-bold">100% Auditável</span>
-            </div>
-          </div>
+
         </div>
 
         {/* ------------------------------------------------------------ */}
@@ -966,6 +1143,13 @@ export default function TramitacaoGovernancaPage() {
                             <span>Enquadrada & Pronta</span>
                           </span>
                         );
+                      } else if (demanda.status === "DOCUMENTOS_PRONTOS_SG") {
+                        statusBadge = (
+                          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-teal-50 text-teal-900 border border-teal-200 flex items-center gap-1.5 shadow-2xs">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-teal-600" />
+                            <span>Docs Prontos p/ SG</span>
+                          </span>
+                        );
                       } else if (demanda.status === "DILIGENCIA_SOLICITADA") {
                         statusBadge = (
                           <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-900 border border-rose-200 flex items-center gap-1.5 shadow-2xs">
@@ -1017,6 +1201,32 @@ export default function TramitacaoGovernancaPage() {
                                 </span>
                                 {statusBadge}
                               </div>
+
+                              {/* Badges de Roteamento Duplo da SG */}
+                              {demanda.enquadramentoSG?.direcionamentoSG && (
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-900 border border-indigo-200 inline-flex items-center gap-1">
+                                    <Send className="h-3 w-3 text-indigo-600" />
+                                    <span>Caixa de Entrada SG: {extrairPrimeiroNome(demanda.enquadramentoSG.direcionamentoSG.servidorSGNome)}</span>
+                                  </span>
+                                  {demanda.enquadramentoSG.direcionamentoSG.visualizado ? (
+                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 inline-flex items-center gap-0.5">
+                                      ✓ Visto SG
+                                    </span>
+                                  ) : (
+                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 inline-flex items-center gap-0.5 animate-pulse">
+                                      ⏱️ Aguardando Visto SG
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+
+                              {demanda.status === "ENQUADRADA_E_AUTORIZADA" && (
+                                <div className="text-[10px] text-emerald-900 font-semibold bg-emerald-50/90 border border-emerald-200 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                                  <CheckCircle className="h-3 w-3 text-emerald-600 shrink-0" />
+                                  <span>Devolvida ao Originador ({demanda.responsavelNome}) • Artefatos Liberados</span>
+                                </div>
+                              )}
 
                               {/* Linha 3: Objeto da Contratação */}
                               <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 group-hover:text-blue-900 transition-colors line-clamp-2 leading-snug">
@@ -1127,6 +1337,10 @@ export default function TramitacaoGovernancaPage() {
                                   {demanda.status === "ENQUADRADA_E_AUTORIZADA" ? (
                                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-900 border border-emerald-200">
                                       Enquadrada
+                                    </span>
+                                  ) : demanda.status === "DOCUMENTOS_PRONTOS_SG" ? (
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-teal-900 border border-teal-200">
+                                      Docs p/ SG
                                     </span>
                                   ) : demanda.status === "DILIGENCIA_SOLICITADA" ? (
                                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-900 border border-rose-200">
@@ -1253,252 +1467,338 @@ export default function TramitacaoGovernancaPage() {
                 </div>
 
                 {/* 2. CARD EXCLUSIVO DE ENQUADRAMENTO DA SG (LEI 14.133/2021) */}
-                {demandaAtiva.enquadramentoSG ? (
-                  <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50/50 border border-emerald-300 shadow-sm space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 text-xs font-extrabold text-emerald-950">
-                        <CheckCircle className="h-4 w-4 text-emerald-600" />
-                        Despacho Oficial da Superintendência de Gestão (SG)
-                      </span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-200/70 text-emerald-900">
-                        Lei nº 14.133/2021
-                      </span>
-                    </div>
+                {(() => {
+                  const isEnquadradaOficial =
+                    (demandaAtiva.status === "ENQUADRADA_E_AUTORIZADA" ||
+                      demandaAtiva.status === "DOCUMENTOS_PRONTOS_SG") &&
+                    Boolean(demandaAtiva.enquadramentoSG?.modalidadeDefinidaId) &&
+                    demandaAtiva.enquadramentoSG?.modalidadeDefinidaId !== "A_DEFINIR";
 
-                    <div className="bg-white/90 p-3.5 rounded-xl border border-emerald-200 space-y-2">
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="text-[11px] text-slate-500 uppercase font-semibold">
-                          Modalidade Fixada Privativamente:
-                        </span>
-                        <span className="font-extrabold text-xs text-emerald-900 font-mono">
-                          {demandaAtiva.enquadramentoSG.modalidadeDefinidaNome}
-                        </span>
-                      </div>
-                      <div className="text-xs text-slate-700 leading-relaxed">
-                        <strong>Fundamentação Legal:</strong>{" "}
-                        {demandaAtiva.enquadramentoSG.artigoLeiBase}
-                      </div>
-                      <div className="text-xs text-slate-700 leading-relaxed pt-1 border-t border-emerald-100">
-                        <strong>Motivação do Enquadramento:</strong>{" "}
-                        {demandaAtiva.enquadramentoSG.justificativaEnquadramento}
-                      </div>
-                      {demandaAtiva.enquadramentoSG.numeroProcessoGerado && (
-                        <div className="pt-2 flex items-center justify-between text-xs">
-                          <span className="text-slate-600">
-                            Processo Administrativo Gerado:
+                  const podeOperarSG = isCoordenadoraGeral;
+
+                  if (isEnquadradaOficial && demandaAtiva.enquadramentoSG) {
+                    const modelosOriginador =
+                      demandaAtiva.enquadramentoSG.modelosDisponibilizadosOriginador &&
+                      demandaAtiva.enquadramentoSG.modelosDisponibilizadosOriginador.length > 0
+                        ? demandaAtiva.enquadramentoSG.modelosDisponibilizadosOriginador
+                        : modelosSugeridos.slice(0, 3);
+
+                    const docsConcluidos = demandaAtiva.enquadramentoSG.elaboracaoOriginadorConcluida;
+
+                    return (
+                      <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50/50 border border-emerald-300 shadow-sm space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="flex items-center gap-1.5 text-xs font-extrabold text-emerald-950">
+                            <CheckCircle className="h-4 w-4 text-emerald-600" />
+                            Enquadramento Licitatório &amp; Despacho Oficial da SG
                           </span>
-                          <span className="font-bold text-sky-950 font-mono bg-sky-100 px-2 py-0.5 rounded border border-sky-200">
-                            {demandaAtiva.enquadramentoSG.numeroProcessoGerado}
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-200/70 text-emerald-900">
+                            Lei nº 14.133/2021
                           </span>
                         </div>
-                      )}
-                    </div>
 
-                    {/* Modelos Oficiais da Minuta */}
-                    {modelosSugeridos.length > 0 && (
-                      <div className="pt-1">
-                        <div className="text-[11px] font-bold text-emerald-900 mb-1 flex items-center gap-1">
-                          <FileText className="h-3 w-3 text-emerald-700" />
-                          Minutas Oficiais da SG Recomendadas para esta Modalidade:
+                        <div className="bg-white/90 p-3.5 rounded-xl border border-emerald-200 space-y-2">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <span className="text-[11px] text-slate-500 uppercase font-semibold">
+                              Modalidade Fixada Privativamente:
+                            </span>
+                            <span className="font-extrabold text-xs text-emerald-900 font-mono">
+                              {demandaAtiva.enquadramentoSG.modalidadeDefinidaNome}
+                            </span>
+                          </div>
+                          <div className="text-xs text-slate-700 leading-relaxed">
+                            <strong>Fundamentação Legal:</strong>{" "}
+                            {demandaAtiva.enquadramentoSG.artigoLeiBase}
+                          </div>
+                          <div className="text-xs text-slate-700 leading-relaxed pt-1 border-t border-emerald-100">
+                            <strong>Motivação do Enquadramento:</strong>{" "}
+                            {demandaAtiva.enquadramentoSG.justificativaEnquadramento}
+                          </div>
+                          {demandaAtiva.enquadramentoSG.numeroProcessoGerado && (
+                            <div className="pt-2 flex items-center justify-between text-xs">
+                              <span className="text-slate-600">
+                                Processo Administrativo Gerado:
+                              </span>
+                              <span className="font-bold text-sky-950 font-mono bg-sky-100 px-2 py-0.5 rounded border border-sky-200">
+                                {demandaAtiva.enquadramentoSG.numeroProcessoGerado}
+                              </span>
+                            </div>
+                          )}
                         </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {modelosSugeridos.slice(0, 3).map((mod) => (
-                            <a
-                              key={mod.id}
-                              href={mod.downloadUrl}
-                              download
-                              className="px-2.5 py-1 rounded-lg bg-white hover:bg-emerald-100 text-slate-700 hover:text-emerald-900 border border-emerald-200 text-[10px] font-medium flex items-center gap-1 transition-colors shadow-2xs"
-                            >
-                              <Download className="h-3 w-3 text-emerald-600" />
-                              <span className="truncate max-w-[200px]">{mod.titulo}</span>
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    )}
 
-                    {/* ROTEAMENTO DUPLO SIMULTÂNEO: DEVOLUÇÃO AO DEMANDANTE + DIRECIONAMENTO AO SERVIDOR DA SG */}
-                    {(() => {
-                      const dirSG = demandaAtiva.enquadramentoSG.direcionamentoSG;
-                      const notif = demandaAtiva.enquadramentoSG.notificacoesOriginador;
-                      const stLocal = visualizadoMap[demandaAtiva.id];
-                      const isVis = stLocal ? stLocal.visualizado : Boolean(dirSG?.visualizado);
-                      const dataVis = stLocal ? stLocal.dataHora : dirSG?.dataHoraVisualizacao;
+                        {/* CARDS DOS MODELOS OFICIAIS DISPONIBILIZADOS PELA COORDENADORA PARA O ORIGINADOR */}
+                        <div className="pt-1 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold text-emerald-900 flex items-center gap-1.5 uppercase">
+                              <FileCheck2 className="h-4 w-4 text-emerald-700" />
+                              Modelos Oficiais Liberados pela Coordenadora para o Setor Originador ({modelosOriginador.length}):
+                            </span>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                              Disponibilizados ao Servidor Originário
+                            </span>
+                          </div>
 
-                      return (
-                        <div className="pt-3 border-t border-emerald-200 space-y-3">
-                          <span className="font-bold text-xs uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
-                            <Sparkles className="h-4 w-4 text-emerald-600" />
-                            Roteamento Simultâneo & Auditoria de Comunicações
-                          </span>
-
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {/* Card 1: Devolução ao Demandante com E-mail Automático */}
-                            <div className="p-3 bg-white/95 rounded-xl border border-emerald-200 space-y-2">
-                              <div className="flex items-center justify-between">
-                                <span className="font-bold text-emerald-950 text-xs flex items-center gap-1.5">
-                                  <Mail className="h-3.5 w-3.5 text-emerald-700" />
-                                  1. Devolução com Artefatos Liberados
-                                </span>
-                                <span className="px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 text-[9px] font-bold">
-                                  Ao Originador
-                                </span>
-                              </div>
-
-                              <div className="text-[11px] text-slate-700">
-                                <strong>Servidor:</strong> {demandaAtiva.responsavelNome}
-                              </div>
-
-                              <div className="space-y-1 pt-1 border-t border-slate-100">
-                                <div className="flex items-center justify-between text-[10px]">
-                                  <span className="flex items-center gap-1 text-slate-600 font-medium">
-                                    <Mail className="h-3 w-3 text-blue-600" />
-                                    E-mail Automático:
-                                  </span>
-                                  <span className="text-emerald-700 font-bold flex items-center gap-1 font-mono">
-                                    <CheckCheck className="h-3 w-3" />
-                                    {notif?.destinatarioEmail || demandaAtiva.responsavelEmail || "e-mail cadastrado"}
-                                  </span>
-                                </div>
-                              </div>
-
-                              {notif?.artefatosDisponibilizados && (
-                                <div className="pt-1.5 border-t border-slate-100">
-                                  <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
-                                    Artefatos Técnicos Liberados para Elaboração:
-                                  </span>
-                                  <div className="flex flex-wrap gap-1">
-                                    {notif.artefatosDisponibilizados.map((art) => (
-                                      <span
-                                        key={art}
-                                        className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-900 border border-emerald-200 text-[9px] font-semibold"
-                                      >
-                                        {art}
-                                      </span>
-                                    ))}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                            {modelosOriginador.map((mod, idx) => (
+                              <div
+                                key={mod.id || idx}
+                                className="p-2.5 rounded-xl bg-white border border-emerald-200 hover:border-emerald-400 shadow-2xs space-y-1.5 transition-all flex flex-col justify-between"
+                              >
+                                <div>
+                                  <div className="flex items-center justify-between gap-1 mb-1">
+                                    <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 text-[9px] font-extrabold uppercase border border-emerald-200">
+                                      {mod.tipoPeca}
+                                    </span>
+                                    <span className="text-[9px] text-slate-400 font-mono">
+                                      {mod.artigoLei || "Lei 14.133"}
+                                    </span>
                                   </div>
+                                  <h4 className="font-bold text-slate-900 text-[11px] line-clamp-2 leading-tight">
+                                    {mod.titulo}
+                                  </h4>
                                 </div>
-                              )}
-
-                              {/* Botão Ativo de Disparo de E-mail */}
-                              <div className="pt-2 border-t border-emerald-100 space-y-1.5">
 
                                 <a
-                                  href={gerarLinkEmail({
-                                    servidorNome: demandaAtiva.responsavelNome,
-                                    servidorEmail: notif?.destinatarioEmail || demandaAtiva.responsavelEmail || "hellywladi87@gmail.com",
-                                    numeroDemanda: demandaAtiva.numeroDemanda,
-                                    superintendencia: `${demandaAtiva.superintendenciaNome} (${demandaAtiva.superintendenciaOrigem})`,
-                                    objeto: demandaAtiva.objeto,
-                                    coordenadoraNome: demandaAtiva.enquadramentoSG.coordenadoraNome || "Dra. Willianne Soares",
-                                    modalidadeNome: demandaAtiva.enquadramentoSG.modalidadeDefinidaNome,
-                                    artigoLei: demandaAtiva.enquadramentoSG.artigoLeiBase,
-                                    numeroProcesso: demandaAtiva.enquadramentoSG.numeroProcessoGerado,
-                                    artefatos: notif?.artefatosDisponibilizados || ["DFD", "ETP", "TR"],
-                                  })}
-                                  className="w-full py-1.5 px-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] flex items-center justify-center gap-1.5 shadow-2xs transition-colors"
-                                  title="Abrir no cliente de e-mail institucional"
+                                  href={mod.downloadUrl || "/modelos/minuta_padrao_sms.docx"}
+                                  download
+                                  className="w-full py-1 px-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-900 font-bold text-[10px] flex items-center justify-center gap-1 transition-colors border border-emerald-200"
                                 >
-                                  <Mail className="h-3 w-3" />
-                                  <span>Abrir e Testar no E-mail ({notif?.destinatarioEmail || demandaAtiva.responsavelEmail || "hellywladi87@gmail.com"})</span>
+                                  <Download className="h-3 w-3 text-emerald-700" />
+                                  <span>Baixar Minuta Oficial</span>
                                 </a>
-
-                                <button
-                                  type="button"
-                                  onClick={() => handleCopiarTextoNotificacao(demandaAtiva)}
-                                  className="w-full py-1 px-2 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-[9px] flex items-center justify-center gap-1 transition-colors cursor-pointer"
-                                >
-                                  <Copy className="h-2.5 w-2.5" />
-                                  <span>{copiadoNotificacao ? "Texto da Notificação Copiado!" : "Copiar Texto da Notificação"}</span>
-                                </button>
                               </div>
-                            </div>
+                            ))}
+                          </div>
+                        </div>
 
-                            {/* Card 2: Direcionamento ao Servidor da SG com Auditoria de Visualização */}
-                            <div className="p-3 bg-white/95 rounded-xl border border-indigo-200 space-y-2">
-                              <div className="flex items-center justify-between">
-                                <span className="font-bold text-indigo-950 text-xs flex items-center gap-1.5">
-                                  <UserCheck className="h-3.5 w-3.5 text-indigo-700" />
-                                  2. Direcionamento ao Servidor da SG
-                                </span>
-                                <span className="px-1.5 py-0.2 rounded bg-indigo-100 text-indigo-800 text-[9px] font-bold">
-                                  Condução do Processo
-                                </span>
-                              </div>
+                        {/* ROTEAMENTO DUPLO: DEVOLUÇÃO AO DEMANDANTE + DIRECIONAMENTO AO SERVIDOR DA SG */}
+                        {(() => {
+                          const dirSG = demandaAtiva.enquadramentoSG.direcionamentoSG;
+                          const notif = demandaAtiva.enquadramentoSG.notificacoesOriginador;
+                          const stLocal = visualizadoMap[demandaAtiva.id];
+                          const isVis = stLocal ? stLocal.visualizado : Boolean(dirSG?.visualizado);
+                          const dataVis = stLocal ? stLocal.dataHora : dirSG?.dataHoraVisualizacao;
 
-                              <div className="text-[11px] text-slate-800">
-                                <strong>Servidor Designado:</strong>
-                                <div className="font-bold text-indigo-900 mt-0.5">
-                                  {dirSG?.servidorSGNome || "Mariana Alcantara Rios (Diretora de Compras e Contratos / SG)"}
-                                </div>
-                              </div>
+                          return (
+                            <div className="pt-3 border-t border-emerald-200 space-y-3">
+                              <span className="font-bold text-xs uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
+                                <Sparkles className="h-4 w-4 text-emerald-600" />
+                                Gestão do Fluxo de Trabalho &amp; Comunicação
+                              </span>
 
-                              <div className="text-[10px] text-slate-600 space-y-1 pt-1 border-t border-slate-100">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-slate-500 font-medium">Data e Hora do Direcionamento:</span>
-                                  <span className="font-mono font-bold text-slate-800">
-                                    {formatDate(dirSG?.dataHoraDirecionamento || demandaAtiva.enquadramentoSG.dataDespacho)}
-                                  </span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                  <span className="text-slate-500 font-medium">Direcionado pela Coordenadora:</span>
-                                  <span className="font-semibold text-slate-700">
-                                    {dirSG?.coordenadoraNome || demandaAtiva.enquadramentoSG.analistaSG}
-                                  </span>
-                                </div>
-                              </div>
-
-                              {/* Status de Visualização */}
-                              <div className="pt-2 border-t border-indigo-100">
-                                {isVis ? (
-                                  <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center gap-2">
-                                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                                    <div>
-                                      <span className="font-bold text-emerald-900 text-[10px] block">
-                                        Visualizado pelo Servidor da SG
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {/* CARD 1: DEVOLUÇÃO AO ORIGINADOR + FLUXO DE CONCLUSÃO DE DOCUMENTOS */}
+                                <div className="p-3.5 bg-white/95 rounded-xl border border-emerald-200 space-y-2.5 flex flex-col justify-between">
+                                  <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                      <span className="font-bold text-emerald-950 text-xs flex items-center gap-1.5">
+                                        <Mail className="h-3.5 w-3.5 text-emerald-700" />
+                                        1. Servidor Originador da Demanda
                                       </span>
-                                      <span className="text-[10px] text-emerald-700 font-mono">
-                                        Registrado em: {formatDate(dataVis || "")}
+                                      <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[9px] font-bold">
+                                        Unidade Demandante
                                       </span>
                                     </div>
-                                  </div>
-                                ) : (
-                                  <div className="space-y-1.5">
-                                    <div className="p-2 rounded-lg bg-amber-50 border border-amber-200 flex items-center gap-2">
-                                      <Clock className="h-4 w-4 text-amber-600 shrink-0 animate-pulse" />
+
+                                    <div className="text-[11px] text-slate-700 space-y-0.5">
                                       <div>
-                                        <span className="font-bold text-amber-900 text-[10px] block">
-                                          Aguardando Visualização pelo Servidor da SG
-                                        </span>
-                                        <span className="text-[10px] text-amber-700">
-                                          O servidor da SG ainda não abriu este direcionamento.
-                                        </span>
+                                        <strong>Servidor:</strong> {demandaAtiva.responsavelNome}
+                                      </div>
+                                      <div className="text-[10px] text-slate-500">
+                                        {demandaAtiva.coordenacaoOrigem} ({demandaAtiva.superintendenciaOrigem})
+                                      </div>
+                                      <div className="text-[10px] text-emerald-800 font-mono font-bold flex items-center gap-1 pt-0.5">
+                                        <Mail className="h-3 w-3 text-emerald-600" />
+                                        {notif?.destinatarioEmail || demandaAtiva.responsavelEmail || "e-mail cadastrado"}
                                       </div>
                                     </div>
 
+                                    {/* STATUS DA ELABORAÇÃO PELO ORIGINADOR */}
+                                    {docsConcluidos?.concluido ? (
+                                      <div className="p-2.5 rounded-xl bg-teal-50 border border-teal-200 space-y-1">
+                                        <div className="flex items-center gap-1.5 text-teal-900 font-bold text-[11px]">
+                                          <CheckCircle2 className="h-4 w-4 text-teal-600 shrink-0" />
+                                          <span>Elaboração de Documentos Concluída pelo Originador</span>
+                                        </div>
+                                        <div className="text-[10px] text-teal-800">
+                                          Enviado em <strong>{formatDate(docsConcluidos.dataHoraConclusao)}</strong> por <strong>{docsConcluidos.servidorNome}</strong>
+                                        </div>
+                                        {docsConcluidos.observacoes && (
+                                          <div className="text-[10px] text-slate-600 italic bg-white/80 p-1.5 rounded border border-teal-100 mt-1">
+                                            &ldquo;{docsConcluidos.observacoes}&rdquo;
+                                          </div>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <div className="p-2.5 rounded-xl bg-amber-50/90 border border-amber-200 space-y-2">
+                                        <div className="flex items-center gap-1.5 text-amber-900 font-bold text-[11px]">
+                                          <Clock className="h-3.5 w-3.5 text-amber-600 shrink-0 animate-pulse" />
+                                          <span>Em Elaboração pelo Servidor Originador</span>
+                                        </div>
+                                        <p className="text-[10px] text-amber-800 leading-relaxed">
+                                          Após preencher as minutas liberadas acima, clique no botão para informar formalmente o servidor da SG.
+                                        </p>
+                                        <button
+                                          type="button"
+                                          onClick={() => setIsConcluirDocumentosOpen(true)}
+                                          className="w-full py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                                        >
+                                          <Send className="h-3.5 w-3.5" />
+                                          <span>Concluir Elaboração &amp; Notificar SG</span>
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Botão de Disparo / Cópia de E-mail */}
+                                  <div className="pt-2 border-t border-slate-100 flex items-center gap-1.5">
+                                    <a
+                                      href={gerarLinkEmail({
+                                        servidorNome: demandaAtiva.responsavelNome,
+                                        servidorEmail: notif?.destinatarioEmail || demandaAtiva.responsavelEmail || "comprassaude@arapiraca.al.gov.br",
+                                        numeroDemanda: demandaAtiva.numeroDemanda,
+                                        superintendencia: `${demandaAtiva.superintendenciaNome} (${demandaAtiva.superintendenciaOrigem})`,
+                                        objeto: demandaAtiva.objeto,
+                                        coordenadoraNome: demandaAtiva.enquadramentoSG.coordenadoraNome || "Dra. Willianne Soares",
+                                        modalidadeNome: demandaAtiva.enquadramentoSG.modalidadeDefinidaNome,
+                                        artigoLei: demandaAtiva.enquadramentoSG.artigoLeiBase,
+                                        numeroProcesso: demandaAtiva.enquadramentoSG.numeroProcessoGerado,
+                                        artefatos: modelosOriginador.map((m) => m.titulo),
+                                      })}
+                                      className="flex-1 py-1 px-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] flex items-center justify-center gap-1 transition-colors"
+                                      title="Abrir no cliente de e-mail institucional"
+                                    >
+                                      <Mail className="h-3 w-3" />
+                                      <span>E-mail</span>
+                                    </a>
+
                                     <button
                                       type="button"
-                                      disabled={salvandoVisualizacao}
-                                      onClick={() => handleVisualizarDirecionamento(demandaAtiva.id, dirSG?.servidorSGNome)}
-                                      className="w-full py-1.5 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] flex items-center justify-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+                                      onClick={() => handleCopiarTextoNotificacao(demandaAtiva)}
+                                      className="py-1 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-[10px] flex items-center gap-1 transition-colors cursor-pointer"
                                     >
-                                      <Eye className="h-3 w-3" />
-                                      <span>
-                                        {salvandoVisualizacao
-                                          ? "Registrando..."
-                                          : "Confirmar Visualização como Servidor da SG"}
-                                      </span>
+                                      <Copy className="h-3 w-3" />
+                                      <span>{copiadoNotificacao ? "Copiado!" : "Copiar"}</span>
                                     </button>
                                   </div>
-                                )}
+                                </div>
+
+                                {/* CARD 2: DIRECIONAMENTO AO SERVIDOR DA SG (ACESSO A TODOS OS MODELOS) */}
+                                <div className="p-3.5 bg-white/95 rounded-xl border border-indigo-200 space-y-2.5 flex flex-col justify-between">
+                                  <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                      <span className="font-bold text-indigo-950 text-xs flex items-center gap-1.5">
+                                        <UserCheck className="h-3.5 w-3.5 text-indigo-700" />
+                                        2. Servidor da SG Designado
+                                      </span>
+                                      <span className="px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800 text-[9px] font-bold">
+                                        Condução do Processo
+                                      </span>
+                                    </div>
+
+                                    <div className="text-[11px] text-slate-800 space-y-0.5">
+                                      <div className="font-bold text-indigo-900 text-xs">
+                                        {dirSG?.servidorSGNome || "Dra. Willianne Soares"}
+                                      </div>
+                                      <div className="text-[10px] text-slate-500">
+                                        {dirSG?.servidorSGCargo || "Coordenadora Geral de Gestão (SG)"}
+                                      </div>
+                                      <div className="text-[10px] text-indigo-800 font-mono font-bold flex items-center gap-1 pt-0.5">
+                                        <Mail className="h-3 w-3 text-indigo-600" />
+                                        {dirSG?.servidorSGEmail || "will2026@gmail.com"}
+                                      </div>
+                                    </div>
+
+                                    {/* AVISO CLARO: ACESSO TOTAL AOS MODELOS */}
+                                    <div className="p-2 rounded-lg bg-indigo-50 border border-indigo-100 text-[10px] text-indigo-950 space-y-1">
+                                      <div className="font-bold flex items-center gap-1 text-indigo-900">
+                                        <ShieldCheck className="h-3.5 w-3.5 text-indigo-600" />
+                                        Acesso Integral &amp; Privativo da SG
+                                      </div>
+                                      <p className="leading-relaxed">
+                                        O servidor da SG possui acesso irrestrito a todos os dados da demanda e ao catálogo completo de <strong>128 modelos oficiais</strong> da Lei nº 14.133/2021 para elaborar Editais, Minutas Contratuais e Pareceres.
+                                      </p>
+                                    </div>
+
+                                    {/* STATUS DOS DOCUMENTOS PARA A SG */}
+                                    {docsConcluidos?.concluido ? (
+                                      <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-[10px] text-emerald-900 flex items-center gap-1.5 font-bold">
+                                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                                        <span>Documentos do originador prontos para instrução da SG!</span>
+                                      </div>
+                                    ) : (
+                                      <div className="p-2 rounded-lg bg-slate-50 border border-slate-200 text-[10px] text-slate-600 flex items-center gap-1.5">
+                                        <Clock className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                                        <span>Aguardando entrega dos documentos pelo originador.</span>
+                                      </div>
+                                    )}
+
+                                    {/* Status de Visualização */}
+                                    <div className="pt-1">
+                                      {isVis ? (
+                                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                                          <CheckCircle2 className="h-3 w-3" />
+                                          Visto pelo servidor da SG em {formatDate(dataVis || "")}
+                                        </span>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          disabled={salvandoVisualizacao}
+                                          onClick={() => handleVisualizarDirecionamento(demandaAtiva.id, dirSG?.servidorSGNome)}
+                                          className="w-full py-1.5 px-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                                        >
+                                          <Eye className="h-3 w-3" />
+                                          <span>Confirmar Visualização como Servidor SG</span>
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Botão de Direcionar para outro servidor da SG */}
+                                  {podeOperarSG && (
+                                    <div className="pt-2 border-t border-indigo-100">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setEnquadramentoModoInicial("DIRECIONAMENTO_SG");
+                                          setIsEnquadramentoOpen(true);
+                                        }}
+                                        className="w-full py-1 px-2 rounded-lg border border-indigo-300 hover:bg-indigo-50 text-indigo-900 font-bold text-[10px] flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                                      >
+                                        <UserCheck className="h-3 w-3 text-indigo-600" />
+                                        <span>{dirSG?.servidorSGNome ? "Alterar Servidor da SG" : "Direcionar ao Servidor da SG"}</span>
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </div>
+                          );
+                        })()}
+
+                        {/* Botão para Coordenadora / SG revisar enquadramento */}
+                        {podeOperarSG && (
+                          <div className="pt-2 flex justify-end">
+                            <button
+                              onClick={() => {
+                                setEnquadramentoModoInicial("ENQUADRAMENTO");
+                                setIsEnquadramentoOpen(true);
+                              }}
+                              className="px-3.5 py-1.5 rounded-lg border border-emerald-300 bg-white hover:bg-emerald-50 text-emerald-900 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                              title="Revisar ou alterar o enquadramento licitatório e a seleção de modelos disponibilizados"
+                            >
+                              <Settings className="h-3.5 w-3.5 text-emerald-700" />
+                              <span>Revisar Enquadramento &amp; Modelos do Originador</span>
+                            </button>
                           </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                ) : demandaAtiva.status === "DILIGENCIA_SOLICITADA" ? (
+                        )}
+                      </div>
+                    );
+                  }
+
+              // CASO 2: Diligência Solicitada
+              if (demandaAtiva.status === "DILIGENCIA_SOLICITADA") {
+                return (
                   <div className="p-4 rounded-xl bg-amber-50 border border-amber-300 shadow-sm space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-1.5 text-xs font-bold text-amber-950">
@@ -1517,34 +1817,99 @@ export default function TramitacaoGovernancaPage() {
                       className="w-full py-2 px-3 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
                     >
                       <Reply className="h-3.5 w-3.5" />
-                      Responder Diligência & Reenviar à SG
+                      Responder Diligência &amp; Reenviar à SG
                     </button>
                   </div>
-                ) : (
-                  <div className="p-4 rounded-xl bg-blue-50/70 border border-blue-200 space-y-2">
-                    <div className="flex items-center justify-between text-xs font-bold text-blue-950">
-                      <span className="flex items-center gap-1.5">
-                        <Clock className="h-4 w-4 text-blue-600" />
-                        Aguardando Enquadramento Privativo da SG
+                );
+              }
+
+              // CASO 3: Demanda já Direcionada ao Servidor da SG, porém ainda PENDENTE de Enquadramento
+              if (demandaAtiva.enquadramentoSG?.direcionamentoSG) {
+                const dir = demandaAtiva.enquadramentoSG.direcionamentoSG;
+                return (
+                  <div className="p-4 rounded-xl bg-gradient-to-r from-sky-50 to-indigo-50 border-2 border-sky-400 shadow-sm space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 text-xs font-extrabold text-sky-950">
+                        <Scale className="h-4 w-4 text-sky-700" />
+                        Demanda Direcionada ao Servidor da SG — Pendente de Enquadramento Oficial
                       </span>
-                      <span className="font-mono text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
-                        Em Análise
+                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-sky-200 text-sky-900 border border-sky-300">
+                        Em Análise na SG
                       </span>
                     </div>
-                    <p className="text-xs text-blue-900/80 leading-relaxed">
-                      A demanda com os itens e quantitativos está sob competência privativa da <strong>Superintendência de Gestão (SG)</strong> para fixação da modalidade (Lei nº 14.133/2021).
-                    </p>
-                    {servidorAtivo?.isSG && (
+
+                    <div className="p-3.5 bg-white/95 rounded-xl border border-sky-200 space-y-2">
+                      <div className="flex flex-wrap items-center justify-between text-xs gap-2">
+                        <div>
+                          <span className="text-slate-500 font-semibold">Servidor da SG Designado:</span>{" "}
+                          <strong className="text-slate-900">{dir.servidorSGNome}</strong>{" "}
+                          <span className="text-[11px] text-slate-500">({dir.servidorSGCargo || "SG"})</span>
+                        </div>
+                        <div className="text-[11px] text-slate-500">
+                          Direcionado em: <strong>{formatDate(dir.dataHoraDirecionamento)}</strong>
+                        </div>
+                      </div>
+                      <p className="text-xs text-sky-900 leading-relaxed pt-1 border-t border-sky-100">
+                        A demanda já foi encaminhada para a Caixa de Entrada de <strong>{dir.servidorSGNome}</strong>. 
+                        Agora a Coordenadora Geral pode <strong>definir a modalidade licitatória</strong> (Lei nº 14.133/2021) e <strong>selecionar o que cada servidor poderá visualizar e editar</strong>.
+                      </p>
+                    </div>
+
+                    {/* Permissões Pré-configuradas (se houver) */}
+                    {demandaAtiva.enquadramentoSG.permissoesAcesso && (
+                      <div className="p-2.5 rounded-lg bg-white/90 border border-indigo-200 text-[11px] flex items-center justify-between">
+                        <span className="text-slate-600 font-medium flex items-center gap-1">
+                          <ShieldCheck className="h-3.5 w-3.5 text-indigo-600" />
+                          Permissões de Acesso dos Servidores:
+                        </span>
+                        <span className="font-bold text-indigo-900">
+                          {demandaAtiva.enquadramentoSG.permissoesAcesso.servidorOriginador?.somenteLeitura
+                            ? "SG (Completo) & Originador (Somente Leitura)"
+                            : "SG (Completo) & Originador (Edição Colaborativa)"}
+                        </span>
+                      </div>
+                    )}
+
+                    {podeOperarSG && (
                       <button
                         onClick={() => setIsEnquadramentoOpen(true)}
-                        className="mt-2 w-full py-2 px-3 rounded-xl bg-sky-700 hover:bg-sky-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+                        className="w-full py-2.5 px-4 rounded-xl bg-sky-700 hover:bg-sky-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer"
                       >
-                        <Sparkles className="h-3.5 w-3.5" />
-                        Enquadrar Modalidade Licitatória Agora (Competência SG)
+                        <Sparkles className="h-4 w-4 text-amber-300" />
+                        <span>Enquadrar Demanda &amp; Autorizar Permissões de Documentos</span>
                       </button>
                     )}
                   </div>
-                )}
+                );
+              }
+
+              // CASO 4: Aguardando Enquadramento Geral (sem direcionamento prévio)
+              return (
+                <div className="p-4 rounded-xl bg-blue-50/70 border border-blue-200 space-y-2">
+                  <div className="flex items-center justify-between text-xs font-bold text-blue-950">
+                    <span className="flex items-center gap-1.5">
+                      <Clock className="h-4 w-4 text-blue-600" />
+                      Aguardando Enquadramento Privativo da SG
+                    </span>
+                    <span className="font-mono text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                      Em Análise
+                    </span>
+                  </div>
+                  <p className="text-xs text-blue-900/80 leading-relaxed">
+                    A demanda com os itens e quantitativos está sob competência privativa da <strong>Superintendência de Gestão (SG)</strong> para fixação da modalidade (Lei nº 14.133/2021).
+                  </p>
+                  {podeOperarSG && (
+                    <button
+                      onClick={() => setIsEnquadramentoOpen(true)}
+                      className="mt-2 w-full py-2 px-3 rounded-xl bg-sky-700 hover:bg-sky-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+                    >
+                      <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+                      Enquadrar Modalidade Licitatória Agora (Competência SG)
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
 
                 {/* 3. Justificativa da Necessidade Pública */}
                 <div className="space-y-1.5">
@@ -1666,15 +2031,44 @@ export default function TramitacaoGovernancaPage() {
 
                 <div className="flex items-center gap-2">
                   {/* Se SG e ainda não enquadrada */}
-                  {servidorAtivo?.isSG && demandaAtiva.status !== "ENQUADRADA_E_AUTORIZADA" && (
+                  {servidorAtivo?.isSG && demandaAtiva.status !== "ENQUADRADA_E_AUTORIZADA" && demandaAtiva.status !== "DOCUMENTOS_PRONTOS_SG" && (
                     <button
-                      onClick={() => setIsEnquadramentoOpen(true)}
+                      onClick={() => {
+                        setEnquadramentoModoInicial("ENQUADRAMENTO");
+                        setIsEnquadramentoOpen(true);
+                      }}
                       className="px-3 py-1.5 rounded-lg bg-sky-700 hover:bg-sky-800 text-white font-semibold text-xs flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
                     >
-                      <Sparkles className="h-3.5 w-3.5" />
+                      <Sparkles className="h-3.5 w-3.5 text-amber-300" />
                       <span>Enquadrar SG</span>
                     </button>
                   )}
+
+                  {/* Se SG e já enquadrada: botão para direcionar servidor */}
+                  {servidorAtivo?.isSG && (demandaAtiva.status === "ENQUADRADA_E_AUTORIZADA" || demandaAtiva.status === "DOCUMENTOS_PRONTOS_SG") && (
+                    <button
+                      onClick={() => {
+                        setEnquadramentoModoInicial("DIRECIONAMENTO_SG");
+                        setIsEnquadramentoOpen(true);
+                      }}
+                      className="px-3 py-1.5 rounded-lg border border-indigo-300 bg-indigo-50 hover:bg-indigo-100 text-indigo-950 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <UserCheck className="h-3.5 w-3.5 text-indigo-700" />
+                      <span>Direcionar / Servidor SG</span>
+                    </button>
+                  )}
+
+                  {/* Botão de Concluir Elaboração de Documentos pelo Originador */}
+                  {demandaAtiva.status === "ENQUADRADA_E_AUTORIZADA" &&
+                    !demandaAtiva.enquadramentoSG?.elaboracaoOriginadorConcluida?.concluido && (
+                      <button
+                        onClick={() => setIsConcluirDocumentosOpen(true)}
+                        className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                      >
+                        <Send className="h-3.5 w-3.5" />
+                        <span>Concluir Docs &amp; Notificar SG</span>
+                      </button>
+                    )}
 
                   {/* Se Diligência */}
                   {demandaAtiva.status === "DILIGENCIA_SOLICITADA" && (
@@ -1687,8 +2081,8 @@ export default function TramitacaoGovernancaPage() {
                     </button>
                   )}
 
-                  {/* Se autorizada, link para ver no hub */}
-                  {demandaAtiva.status === "ENQUADRADA_E_AUTORIZADA" && (
+                  {/* Se autorizada ou docs prontos, link para ver no hub */}
+                  {(demandaAtiva.status === "ENQUADRADA_E_AUTORIZADA" || demandaAtiva.status === "DOCUMENTOS_PRONTOS_SG") && (
                     <Link
                       href="/processos"
                       className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs flex items-center gap-1.5 shadow-sm transition-colors"
@@ -1720,6 +2114,16 @@ export default function TramitacaoGovernancaPage() {
         demanda={demandaAtiva}
         isOpen={isEnquadramentoOpen}
         onClose={() => setIsEnquadramentoOpen(false)}
+        modoInicial={enquadramentoModoInicial}
+        onSuccess={() => setVersaoDados((v) => v + 1)}
+      />
+
+      {/* Modal de Concluir Elaboração dos Documentos pelo Originador */}
+      <ConcluirDocumentosOriginadorModal
+        demanda={demandaAtiva}
+        isOpen={isConcluirDocumentosOpen}
+        onClose={() => setIsConcluirDocumentosOpen(false)}
+        onSuccess={() => setVersaoDados((v) => v + 1)}
       />
 
       {/* Modal de Responder Diligência */}

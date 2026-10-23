@@ -148,7 +148,7 @@ export function NovaSolicitacaoPagamentoModal({
 
   // Gerador de Ofício de Solicitação de Pagamento baseado no modelo oficial da SMS
   const handleAbrirElaboradorOficio = () => {
-    const fiscalNome = contrato?.fiscalTitularNome || "Tenente Roberto Nogueira";
+    const fiscalNome = contrato?.fiscalTitularNome || "Fiscal do Contrato";
     const valorFormatado = formatCurrency(valorNumerico > 0 ? valorNumerico : saldoMaximoContrato);
     const ptTexto = dotacaoSelecionada
       ? `Programa de Trabalho: ${dotacaoSelecionada.programaDeTrabalho} - ${dotacaoSelecionada.programaNome || 'Saúde'}\nElemento de Despesa: ${dotacaoSelecionada.elementoDespesa}\nFonte de Recursos: ${dotacaoSelecionada.fonteRecurso}`
@@ -516,7 +516,7 @@ export function NovaSolicitacaoPagamentoModal({
                     estando em total conformidade com os termos pactuados.
                   </p>
                   <span className="text-[10px] font-bold text-emerald-800 block mt-1">
-                    Fiscal Responsável: {contrato?.fiscalTitularNome || "Tenente Roberto Nogueira"}
+                    Fiscal Responsável: {contrato?.fiscalTitularNome || "Fiscal do Contrato"}
                   </span>
                 </div>
               </label>
