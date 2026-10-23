@@ -48,7 +48,7 @@ export function DetalhesItemPcaModal({
                 {item.codigoItem}
               </span>
               <span className="text-[10px] font-bold bg-emerald-500/30 text-emerald-100 border border-emerald-400/30 px-2 py-0.5 rounded-full">
-                PCA 2025
+                PCA
               </span>
             </div>
             <h3 className="text-base sm:text-lg font-bold tracking-tight mt-1">
@@ -89,7 +89,7 @@ export function DetalhesItemPcaModal({
 
               <div>
                 <span className="text-[10px] text-slate-500 block font-medium">Previsão Contratação</span>
-                <span className="font-bold text-slate-800 text-[11px]">{item.dataPrevisaoContratacao || "2025"}</span>
+                <span className="font-bold text-slate-800 text-[11px]">{item.dataPrevisaoContratacao || "-"}</span>
               </div>
 
               <div>
@@ -181,7 +181,7 @@ export function DetalhesItemPcaModal({
                   Valor Estimado Consolidado
                 </span>
                 <span className="text-xs text-slate-300">
-                  Total para o Exercício 2025 da Saúde
+                  Total para o Plano de Contratações da Saúde
                 </span>
               </div>
             </div>

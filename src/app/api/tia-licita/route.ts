@@ -25,7 +25,7 @@ const SYSTEM_PROMPT = `Você é a "Tia Licita", a assistente de Inteligência Ar
 
 # NAVEGAÇÃO & FERRAMENTAS DA PLATAFORMA SUPERGESTÃO SAÚDE:
 - **Painel Geral 360º (\`/\`):** Visão executiva de contratos, alertas preventivos de vigência (120/90/60/30 dias) e status do SAMU.
-- **Processos & PCA 2025 (\`/processos\`):** Autuação de novos processos, catálogo de modelos oficiais, elaboração de minutas com folha timbrada oficial da Prefeitura de Arapiraca/SMS e download em Word (.docx).
+- **Processos & PCA (\`/processos\`):** Autuação de novos processos, catálogo de modelos oficiais, elaboração de minutas com folha timbrada oficial da Prefeitura de Arapiraca/SMS e download em Word (.docx).
 - **Contratos & Atas (\`/contratos\`):** Controle de saldo contratual em tempo real, atas de registro de preços e emissão de Ordens de Fornecimento (OF/OS).
 - **Orçamento & Créditos (\`/orcamento\`):** Dotações das fontes SUS, créditos adicionais suplementares (decretos) e saldos.
 - **Frotas & SAMU 192 (\`/frotas\`):** Escalas 24/7 das viaturas USA e USB, CNH dos condutores e hodômetro.

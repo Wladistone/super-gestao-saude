@@ -114,7 +114,7 @@ export async function parsearArquivoPCA(file: File, usuarioNome?: string): Promi
             normRow["documento_formalizacao"] ||
             normRow["doc_formalizacao"] ||
             normRow["processo_dfd"] ||
-            `DFD-${String(index + 1).padStart(3, "0")}/2025`;
+            `DFD-${String(index + 1).padStart(3, "0")}`;
 
           const codigoItem =
             normRow["codigo"] ||
@@ -123,7 +123,7 @@ export async function parsearArquivoPCA(file: File, usuarioNome?: string): Promi
             normRow["codigo_item"] ||
             normRow["item_pca"] ||
             normRow["id_pca"] ||
-            `PCA-2025/${String(mapaAgrupamento.size + 1).padStart(3, "0")}`;
+            `PCA-${String(mapaAgrupamento.size + 1).padStart(3, "0")}`;
 
           const categoria =
             normRow["categoria"] ||
@@ -162,7 +162,7 @@ export async function parsearArquivoPCA(file: File, usuarioNome?: string): Promi
             normRow["data_previsao"] ||
             normRow["mes_previsao"] ||
             normRow["previsao_contratacao"] ||
-            "2025-06";
+            "";
 
           // Campos do item estimado da linha
           const descricaoItem =
@@ -264,7 +264,7 @@ export async function parsearArquivoPCA(file: File, usuarioNome?: string): Promi
 
           itensConsolidados.push({
             id: `pca-${Date.now()}-${itensConsolidados.length}-${Math.random().toString(36).substring(2, 6)}`,
-            anoExercicio: 2025,
+            anoExercicio: new Date().getFullYear(),
             codigoItem: grupo.codigoItem,
             numeroDFD: grupo.numeroDFD,
             descricao: grupo.descricao,
@@ -324,8 +324,8 @@ export async function parsearArquivoPCA(file: File, usuarioNome?: string): Promi
 export function baixarPlanilhaModeloPCA(): void {
   const dadosExemplo = [
     {
-      "Nº DFD": "DFD 014/2025 - SAS",
-      "Código PCA": "PCA-2025/001",
+      "Nº DFD": "DFD 014 - SAS",
+      "Código PCA": "PCA-001",
       "Categoria": "Medicamentos & Farmácia",
       "Objeto da Contratação": "Registro de Preços para fornecimento contínuo de medicamentos de Atenção Básica",
       "Unidade Requisitante": "SAS",
@@ -335,12 +335,12 @@ export function baixarPlanilhaModeloPCA(): void {
       "Quantidade Estimada": 35000,
       "Valor Unitário Estimado (R$)": 3.85,
       "Valor Total Estimado (R$)": 134750.0,
-      "Previsão de Contratação": "2025-04",
+      "Previsão de Contratação": "1º Semestre",
       "Grau de Prioridade": "ALTA",
     },
     {
-      "Nº DFD": "DFD 014/2025 - SAS",
-      "Código PCA": "PCA-2025/001",
+      "Nº DFD": "DFD 014 - SAS",
+      "Código PCA": "PCA-001",
       "Categoria": "Medicamentos & Farmácia",
       "Objeto da Contratação": "Registro de Preços para fornecimento contínuo de medicamentos de Atenção Básica",
       "Unidade Requisitante": "SAS",
@@ -350,12 +350,12 @@ export function baixarPlanilhaModeloPCA(): void {
       "Quantidade Estimada": 12000,
       "Valor Unitário Estimado (R$)": 18.5,
       "Valor Total Estimado (R$)": 222000.0,
-      "Previsão de Contratação": "2025-04",
+      "Previsão de Contratação": "1º Semestre",
       "Grau de Prioridade": "ALTA",
     },
     {
-      "Nº DFD": "DFD 022/2025 - CAF",
-      "Código PCA": "PCA-2025/002",
+      "Nº DFD": "DFD 022 - CAF",
+      "Código PCA": "PCA-002",
       "Categoria": "Material Médico-Hospitalar",
       "Objeto da Contratação": "Aquisição parcelada de insumos descartáveis e materiais penso para UPAs e UBSs",
       "Unidade Requisitante": "SAS",
@@ -365,12 +365,12 @@ export function baixarPlanilhaModeloPCA(): void {
       "Quantidade Estimada": 8500,
       "Valor Unitário Estimado (R$)": 42.0,
       "Valor Total Estimado (R$)": 357000.0,
-      "Previsão de Contratação": "2025-05",
+      "Previsão de Contratação": "2º Semestre",
       "Grau de Prioridade": "ALTA",
     },
     {
-      "Nº DFD": "DFD 031/2025 - SG",
-      "Código PCA": "PCA-2025/003",
+      "Nº DFD": "DFD 031 - SG",
+      "Código PCA": "PCA-003",
       "Categoria": "Locação de Veículos & Transporte",
       "Objeto da Contratação": "Locação de veículos tipo van adaptada e ambulâncias de suporte básico com motorista",
       "Unidade Requisitante": "SG",
@@ -380,14 +380,14 @@ export function baixarPlanilhaModeloPCA(): void {
       "Quantidade Estimada": 12,
       "Valor Unitário Estimado (R$)": 14500.0,
       "Valor Total Estimado (R$)": 174000.0,
-      "Previsão de Contratação": "2025-06",
+      "Previsão de Contratação": "2º Semestre",
       "Grau de Prioridade": "ALTA",
     },
   ];
 
   const ws = XLSX.utils.json_to_sheet(dadosExemplo);
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "PCA_Saude_2025");
+  XLSX.utils.book_append_sheet(wb, ws, "PCA_Saude");
 
   // Ajusta larguras de coluna
   ws["!cols"] = [
@@ -406,7 +406,7 @@ export function baixarPlanilhaModeloPCA(): void {
     { wch: 18 }, // Grau de Prioridade
   ];
 
-  XLSX.writeFile(wb, "Modelo_Oficial_PCA_Saude_2025.xlsx");
+  XLSX.writeFile(wb, "Modelo_Oficial_PCA_Saude.xlsx");
 }
 
 /**

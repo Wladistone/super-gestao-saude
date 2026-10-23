@@ -71,7 +71,7 @@ export function NovoItemPcaModal({
   const [categoria, setCategoria] = useState(CATEGORIAS_SAUDE[0]);
   const [unidadeRequisitante, setUnidadeRequisitante] = useState("SAS");
   const [grauPrioridade, setGrauPrioridade] = useState<"ALTA" | "MEDIA" | "BAIXA">("ALTA");
-  const [dataPrevisaoContratacao, setDataPrevisaoContratacao] = useState("2025-06");
+  const [dataPrevisaoContratacao, setDataPrevisaoContratacao] = useState("");
   const [descricaoObjeto, setDescricaoObjeto] = useState("");
   const [status, setStatus] = useState<StatusPCA>("PLANEJADO");
 
@@ -211,10 +211,10 @@ export function NovoItemPcaModal({
     try {
       const codItemFinal =
         codigoItem.trim() ||
-        `PCA-2025/${String(dataStore.pca.length + 1).padStart(3, "0")}`;
+        `PCA-${String(dataStore.pca.length + 1).padStart(3, "0")}`;
 
       const res = dataStore.adicionarItemPCA({
-        anoExercicio: 2025,
+        anoExercicio: new Date().getFullYear(),
         codigoItem: codItemFinal,
         numeroDFD: numeroDFD.trim() || undefined,
         descricao: descricaoObjeto.trim(),
@@ -263,9 +263,6 @@ export function NovoItemPcaModal({
               <span className="text-[10px] font-bold uppercase tracking-wider bg-white/20 text-white px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 backdrop-blur-xs">
                 <Sparkles className="h-3 w-3 text-amber-300" />
                 Coordenação de Gestão • SMS
-              </span>
-              <span className="text-[10px] font-bold bg-emerald-500/30 text-emerald-100 border border-emerald-400/30 px-2 py-0.5 rounded-full">
-                Exercício 2025
               </span>
             </div>
             <h3 className="text-base sm:text-lg font-bold tracking-tight mt-1 flex items-center gap-2">
@@ -325,7 +322,7 @@ export function NovoItemPcaModal({
                   type="text"
                   value={numeroDFD}
                   onChange={(e) => setNumeroDFD(e.target.value)}
-                  placeholder="Ex: DFD 014/2025 - SAS"
+                  placeholder="Ex: DFD 014 - SAS"
                   className="w-full p-2 border border-slate-300 rounded-lg bg-white text-slate-800 font-medium focus:ring-2 focus:ring-sky-500 focus:outline-none"
                 />
               </div>
@@ -338,7 +335,7 @@ export function NovoItemPcaModal({
                   type="text"
                   value={codigoItem}
                   onChange={(e) => setCodigoItem(e.target.value)}
-                  placeholder="Ex: PCA-2025/001"
+                  placeholder="Ex: PCA-001"
                   className="w-full p-2 border border-slate-300 rounded-lg bg-white text-slate-800 font-mono font-bold focus:ring-2 focus:ring-sky-500 focus:outline-none"
                 />
               </div>

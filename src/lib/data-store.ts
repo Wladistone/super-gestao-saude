@@ -2206,8 +2206,8 @@ class SuperGestaoDataStore {
 
     const item: ItemPCA = {
       id: novoId,
-      anoExercicio: dados.anoExercicio || 2025,
-      codigoItem: dados.codigoItem || `PCA-2025/${String(this.pca.length + 1).padStart(3, "0")}`,
+      anoExercicio: dados.anoExercicio || new Date().getFullYear(),
+      codigoItem: dados.codigoItem || `PCA-${String(this.pca.length + 1).padStart(3, "0")}`,
       numeroDFD: dados.numeroDFD,
       descricao: dados.descricao,
       categoria: dados.categoria,
@@ -2216,7 +2216,7 @@ class SuperGestaoDataStore {
       quantidadeTotal: qtdTotal,
       valorEstimado: vlrEstimado,
       status: dados.status || "PLANEJADO",
-      dataPrevisaoContratacao: dados.dataPrevisaoContratacao || "2025-06",
+      dataPrevisaoContratacao: dados.dataPrevisaoContratacao || "",
       itensEstimados: dados.itensEstimados || [],
       origemInsercao: dados.origemInsercao || "MANUAL",
       inseridoPor: dados.inseridoPor,

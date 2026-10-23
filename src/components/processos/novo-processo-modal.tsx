@@ -463,7 +463,7 @@ export function NovoProcessoModal({ isOpen, onClose, onSuccess }: NovoProcessoMo
 
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">
-                  Vínculo com Plano de Contratações Anual (PCA 2025)
+                  Vínculo com Plano de Contratações Anual (PCA)
                 </label>
                 <select
                   value={selectedPcaId}

@@ -139,9 +139,9 @@ export const MODULOS_SISTEMA_DISPONIVEIS: ModuloSistemaDef[] = [
   {
     id: "processos",
     nome: "Processos & Licitações",
-    descricao: "PCA 2025, fase preparatória, catálogo de modelos, pareceres técnicos e instrução processual.",
+    descricao: "Plano de Contratações (PCA), fase preparatória, catálogo de modelos, pareceres técnicos e instrução processual.",
     iconeNome: "FileText",
-    badge: "PCA 2025",
+    badge: "PCA",
   },
   {
     id: "contratos",

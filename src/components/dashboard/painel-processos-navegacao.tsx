@@ -1729,7 +1729,7 @@ export function PainelProcessosNavegacao() {
                 Processos & Licitações
               </h3>
               <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
-                Autos autuados, minutas Word e PCA 2025
+                Autos autuados, minutas Word e PCA
               </p>
             </div>
             <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all shrink-0 mt-1" />

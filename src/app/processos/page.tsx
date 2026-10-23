@@ -183,7 +183,7 @@ export default function ProcessosPage() {
           <div className="flex flex-wrap items-center gap-1.5 mt-1">
             {row.itemPcaId && (
               <span className="text-[9px] bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded border border-purple-200 font-semibold inline-block">
-                PCA 2025
+                PCA
               </span>
             )}
             {row.valorEstimado ? (
@@ -473,7 +473,7 @@ export default function ProcessosPage() {
           }`}
         >
           <Sparkles className="h-4 w-4 text-indigo-600" />
-          <span>Plano de Contratações (PCA 2025)</span>
+          <span>Plano de Contratações (PCA)</span>
           {itensPCA.length > 0 && (
             <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
               {itensPCA.length}
@@ -509,12 +509,9 @@ export default function ProcessosPage() {
                     <Sparkles className="h-3 w-3 text-amber-300" />
                     Governança & Planejamento • Art. 12, VII da Lei 14.133/2021
                   </span>
-                  <span className="text-[10px] font-bold bg-emerald-500/30 text-emerald-100 border border-emerald-400/30 px-2 py-0.5 rounded-full">
-                    Exercício 2025
-                  </span>
                 </div>
                 <h3 className="text-base sm:text-lg font-bold tracking-tight mt-1.5">
-                  Plano de Contratações Anual da Saúde (PCA 2025)
+                  Plano de Contratações Anual da Saúde (PCA)
                 </h3>
                 <p className="text-xs text-purple-200/90 mt-0.5 max-w-2xl">
                   Centralize e acompanhe todas as contratações da SMS. A coordenadora pode inserir a planilha completa do PCA ou cadastrar individualmente cada DFD com seus itens e valores estimados.
@@ -651,7 +648,7 @@ export default function ProcessosPage() {
           <DataTable
             data={itensPCA}
             columns={pcaColumns}
-            title="Itens do Plano de Contratações Anual (PCA 2025)"
+            title="Itens do Plano de Contratações Anual (PCA)"
             searchPlaceholder="Filtrar por DFD, código, categoria ou descrição do objeto..."
           />
         </div>
