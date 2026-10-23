@@ -2146,6 +2146,130 @@ class SuperGestaoDataStore {
     this.emailsEnviados = [];
     this.salvarEmailsStorage();
   }
+
+  // -------------------------------------------------------------
+  // GESTÃO DO PLANO DE CONTRATAÇÕES ANUAL (PCA) COM PERSISTÊNCIA DUAL
+  // -------------------------------------------------------------
+  public carregarPcaStorage(): ItemPCA[] {
+    if (typeof window === "undefined") {
+      return this.pca;
+    }
+    try {
+      const data = localStorage.getItem("supergestao_pca");
+      if (data) {
+        const parsed = JSON.parse(data) as ItemPCA[];
+        if (Array.isArray(parsed)) {
+          this.pca = parsed;
+        }
+      } else {
+        this.salvarPcaStorage();
+      }
+    } catch {
+      // fallback gracioso
+    }
+    return this.pca;
+  }
+
+  public salvarPcaStorage(): void {
+    if (typeof window === "undefined") return;
+    try {
+      localStorage.setItem("supergestao_pca", JSON.stringify(this.pca));
+      window.dispatchEvent(new CustomEvent("supergestao_pca_atualizado"));
+    } catch {
+      // fallback gracioso
+    }
+  }
+
+  public obterItensPCA(): ItemPCA[] {
+    this.carregarPcaStorage();
+    return [...this.pca];
+  }
+
+  public adicionarItemPCA(dados: Omit<ItemPCA, "id"> & { id?: string }): { success: boolean; message: string; item?: ItemPCA } {
+    this.carregarPcaStorage();
+    const novoId = dados.id || `pca-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    
+    // Calcula quantidade total se houver itens estimados
+    const qtdTotal = dados.itensEstimados && dados.itensEstimados.length > 0
+      ? dados.itensEstimados.reduce((acc, it) => acc + (Number(it.quantidadeEstimada) || 0), 0)
+      : dados.quantidadeTotal || 0;
+
+    // Calcula valor estimado total se houver itens estimados
+    let vlrEstimado = dados.valorEstimado;
+    if (dados.itensEstimados && dados.itensEstimados.length > 0) {
+      const somaItens = dados.itensEstimados.reduce(
+        (acc, it) => acc + (Number(it.valorTotalEstimado) || (Number(it.quantidadeEstimada) * Number(it.valorUnitarioEstimado)) || 0),
+        0
+      );
+      if (somaItens > 0) vlrEstimado = somaItens;
+    }
+
+    const item: ItemPCA = {
+      id: novoId,
+      anoExercicio: dados.anoExercicio || 2025,
+      codigoItem: dados.codigoItem || `PCA-2025/${String(this.pca.length + 1).padStart(3, "0")}`,
+      numeroDFD: dados.numeroDFD,
+      descricao: dados.descricao,
+      categoria: dados.categoria,
+      unidadeRequisitante: dados.unidadeRequisitante || "SAS",
+      grauPrioridade: dados.grauPrioridade || "ALTA",
+      quantidadeTotal: qtdTotal,
+      valorEstimado: vlrEstimado,
+      status: dados.status || "PLANEJADO",
+      dataPrevisaoContratacao: dados.dataPrevisaoContratacao || "2025-06",
+      itensEstimados: dados.itensEstimados || [],
+      origemInsercao: dados.origemInsercao || "MANUAL",
+      inseridoPor: dados.inseridoPor,
+      inseridoEm: dados.inseridoEm || new Date().toISOString(),
+    };
+
+    this.pca.unshift(item);
+    this.salvarPcaStorage();
+    return {
+      success: true,
+      message: `Contratação ${item.codigoItem} (${item.numeroDFD || "DFD"}) cadastrada com sucesso!`,
+      item,
+    };
+  }
+
+  public importarItensPCA(itens: ItemPCA[], substituir: boolean = false): { success: boolean; message: string; totalImportado: number } {
+    this.carregarPcaStorage();
+    if (substituir) {
+      this.pca = [...itens];
+    } else {
+      const existentesMap = new Set(
+        this.pca.map((p) => (p.numeroDFD ? p.numeroDFD.toLowerCase().trim() : p.codigoItem.toLowerCase().trim()))
+      );
+      const novos = itens.filter((it) => {
+        const chave = (it.numeroDFD ? it.numeroDFD.toLowerCase().trim() : it.codigoItem.toLowerCase().trim());
+        return !existentesMap.has(chave);
+      });
+      this.pca = [...novos, ...this.pca];
+    }
+    this.salvarPcaStorage();
+    return {
+      success: true,
+      message: `${itens.length} contratação(ões) do PCA foram consolidadas com sucesso!`,
+      totalImportado: itens.length,
+    };
+  }
+
+  public removerItemPCA(id: string): { success: boolean; message: string } {
+    this.carregarPcaStorage();
+    const index = this.pca.findIndex((p) => p.id === id);
+    if (index === -1) {
+      return { success: false, message: "Item do PCA não encontrado." };
+    }
+    const removido = this.pca.splice(index, 1)[0];
+    this.salvarPcaStorage();
+    return { success: true, message: `Item ${removido.codigoItem} removido com sucesso.` };
+  }
+
+  public limparPCA(): { success: boolean; message: string } {
+    this.pca = [];
+    this.salvarPcaStorage();
+    return { success: true, message: "Base do PCA zerada com sucesso." };
+  }
 }
 
 export const dataStore = SuperGestaoDataStore.getInstance();

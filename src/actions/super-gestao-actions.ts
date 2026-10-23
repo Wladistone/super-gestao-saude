@@ -2,7 +2,7 @@
 
 import { dataStore } from "@/lib/data-store";
 import { revalidatePath } from "next/cache";
-import { PermissaoModulo } from "@/lib/types";
+import { PermissaoModulo, ItemPCA } from "@/lib/types";
 import {
   enviarEmailBoasVindasCadastro,
   enviarEmailCadastroRejeitado,
@@ -694,4 +694,32 @@ export async function excluirCadastroAction(id: string) {
   revalidatePath("/solicitacoes");
   revalidatePath("/");
   return { success: res };
+}
+
+export async function adicionarItemPcaAction(dados: Omit<ItemPCA, "id"> & { id?: string }) {
+  const res = dataStore.adicionarItemPCA(dados);
+  revalidatePath("/processos");
+  revalidatePath("/");
+  return res;
+}
+
+export async function importarPcaAction(itens: ItemPCA[], substituir: boolean = false) {
+  const res = dataStore.importarItensPCA(itens, substituir);
+  revalidatePath("/processos");
+  revalidatePath("/");
+  return res;
+}
+
+export async function removerItemPcaAction(id: string) {
+  const res = dataStore.removerItemPCA(id);
+  revalidatePath("/processos");
+  revalidatePath("/");
+  return res;
+}
+
+export async function limparPcaAction() {
+  const res = dataStore.limparPCA();
+  revalidatePath("/processos");
+  revalidatePath("/");
+  return res;
 }

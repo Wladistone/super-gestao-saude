@@ -179,15 +179,33 @@ export const MODULOS_SISTEMA_DISPONIVEIS: ModuloSistemaDef[] = [
   },
 ];
 
+export interface ItemEstimadoPCA {
+  id: string;
+  numeroItem: number;
+  descricao: string;
+  unidadeMedida?: string;
+  quantidadeEstimada: number;
+  valorUnitarioEstimado: number;
+  valorTotalEstimado: number;
+}
+
 export interface ItemPCA {
   id: string;
   anoExercicio: number;
   codigoItem: string;
+  numeroDFD?: string;
   descricao: string;
   categoria: string;
+  unidadeRequisitante?: string;
+  grauPrioridade?: "ALTA" | "MEDIA" | "BAIXA";
+  quantidadeTotal?: number;
   valorEstimado: number;
   status: StatusPCA;
   dataPrevisaoContratacao: string;
+  itensEstimados?: ItemEstimadoPCA[];
+  origemInsercao?: "ARQUIVO_IMPORTADO" | "MANUAL";
+  inseridoPor?: string;
+  inseridoEm?: string;
 }
 
 export interface ProcessoAdministrativo {
